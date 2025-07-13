@@ -1,0 +1,505 @@
+@page "/non-visa/list"
+@rendermode InteractiveServer
+
+<PageTitle>Visa Violations Registry - BlackList Management</PageTitle>
+
+<div class="fade-in">
+    <div class="container">
+        <!-- Standardized Page Header -->
+        <div class="page-header mb-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="page-title">
+                        <i class="fas fa-exclamation-triangle me-3"></i>
+                        Visa Violations Registry
+                    </h1>
+                    <p class="page-subtitle">Track and manage passengers who violated visa requirements</p>
+                </div>
+                <div>
+                    <a href="/non-visa/add" class="btn btn-danger">
+                        <i class="fas fa-plus me-2"></i>
+                        Record New Violation
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Message -->
+        @if (!string.IsNullOrEmpty(statusMessage))
+        {
+            <div class="alert @statusClass alert-dismissible fade show" role="alert">
+                <i class="fas @statusIcon me-2"></i>
+                @statusMessage
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+
+        <!-- Summary Cards -->
+        <div class="row mb-4">
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="card stats-card danger h-100">
+                    <div class="card-body text-center">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title text-uppercase mb-1">Total</h6>
+                                <h2 class="mb-0 fw-bold">@totalPassengers</h2>
+                                <p class="mb-0 opacity-75">Violations</p>
+                            </div>
+                            <div class="fs-1 opacity-50">
+                                <i class="fas fa-exclamation-triangle"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="card stats-card warning h-100">
+                    <div class="card-body text-center">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title text-uppercase mb-1">Today</h6>
+                                <h2 class="mb-0 fw-bold">@todayArrivals</h2>
+                                <p class="mb-0 opacity-75">New Violations</p>
+                            </div>
+                            <div class="fs-1 opacity-50">
+                                <i class="fas fa-calendar-day"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="card stats-card info h-100">
+                    <div class="card-body text-center">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title text-uppercase mb-1">This Week</h6>
+                                <h2 class="mb-0 fw-bold">@weekArrivals</h2>
+                                <p class="mb-0 opacity-75">Weekly Violations</p>
+                            </div>
+                            <div class="fs-1 opacity-50">
+                                <i class="fas fa-calendar-week"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="card stats-card secondary h-100">
+                    <div class="card-body text-center">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title text-uppercase mb-1">No Visa</h6>
+                                <h2 class="mb-0 fw-bold">@businessPassengers</h2>
+                                <p class="mb-0 opacity-75">Most Common</p>
+                            </div>
+                            <div class="fs-1 opacity-50">
+                                <i class="fas fa-ban"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filter and Search -->
+        <div class="card mb-4 slide-up">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-4">
+                        <div class="search-container">
+                            <i class="fas fa-search search-icon"></i>
+                            <input type="text" class="form-control" placeholder="Search violations..." 
+                                   @bind="searchTerm" @oninput="OnSearchChanged" />
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <select class="form-select" @bind="purposeFilter" @bind:after="FilterAndSortPassengers">
+                            <option value="">All Violation Types</option>
+                            <option value="No Visa">No Visa</option>
+                            <option value="Expired Visa">Expired Visa</option>
+                            <option value="Invalid Visa">Invalid Visa</option>
+                            <option value="Wrong Visa Type">Wrong Visa Type</option>
+                            <option value="Fake Visa">Fake Visa</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <select class="form-select" @bind="sortBy" @bind:after="FilterAndSortPassengers">
+                            <option value="name">Sort by Name</option>
+                            <option value="arrivalDate">Sort by Arrival Date</option>
+                            <option value="nationality">Sort by Nationality</option>
+                            <option value="purpose">Sort by Purpose</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Passengers List -->
+        <div class="card slide-up">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Visa Violations (@filteredPassengers.Count)
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                @if (filteredPassengers.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Passenger</th>
+                                    <th>Nationality</th>
+                                    <th>Passport</th>
+                                    <th>Flight Info</th>
+                                    <th>Violation Type</th>
+                                    <th>Airport Station</th>
+                                    <th>Arrival Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var passenger in currentPagePassengers)
+                                {
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div>
+                                                    <div class="fw-bold">@passenger.FullName</div>
+                                                    <small class="text-muted">
+                                                        <i class="fas fa-calendar-plus me-1"></i>
+                                                        Registered: @passenger.CreatedDate.ToString("MMM dd, yyyy")
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-light text-dark">@passenger.Nationality</span>
+                                        </td>
+                                        <td>
+                                            <div class="fw-bold">@passenger.PassportNumber</div>
+                                        </td>
+                                        <td>
+                                            @if (!string.IsNullOrEmpty(passenger.FlightNumber))
+                                            {
+                                                <div>
+                                                    <strong>Flight:</strong> @passenger.FlightNumber
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">No flight info</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (!string.IsNullOrEmpty(passenger.ViolationType))
+                                            {
+                                                <span class="badge bg-@GetViolationBadgeClass(passenger.ViolationType)">
+                                                    @passenger.ViolationType
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">Not specified</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (!string.IsNullOrEmpty(passenger.AirportStation))
+                                            {
+                                                <span class="badge bg-light text-dark">
+                                                    @passenger.AirportStation
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">Not specified</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (passenger.ArrivalDate.HasValue)
+                                            {
+                                                <div>@passenger.ArrivalDate.Value.ToString("MMM dd, yyyy")</div>
+                                                @if (passenger.ArrivalDate.Value.Date == DateTime.Today)
+                                                {
+                                                    <small class="text-success">
+                                                        <i class="fas fa-circle me-1"></i>Today
+                                                    </small>
+                                                }
+                                                else if (passenger.ArrivalDate.Value.Date > DateTime.Today)
+                                                {
+                                                    <small class="text-primary">
+                                                        <i class="fas fa-arrow-right me-1"></i>Upcoming
+                                                    </small>
+                                                }
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">Not specified</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <div class="btn-group" role="group" aria-label="Actions">
+                                                <button class="btn btn-sm btn-outline-primary" @onclick="() => ViewPassenger(passenger)" title="View Details">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-warning" @onclick="() => EditPassenger(passenger)" title="Edit">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-danger" @onclick="() => ConfirmDelete(passenger)" title="Delete">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    @if (totalPages > 1)
+                    {
+                        <div class="card-footer">
+                            <nav aria-label="Pagination">
+                                <ul class="pagination justify-content-center mb-0">
+                                    <li class="page-item @(currentPage == 1 ? "disabled" : "")">
+                                        <button class="page-link" @onclick="() => GoToPage(currentPage - 1)" disabled="@(currentPage == 1)">
+                                            <i class="fas fa-chevron-left"></i>
+                                        </button>
+                                    </li>
+                                    
+                                    @for (int i = 1; i <= totalPages; i++)
+                                    {
+                                        var pageNumber = i;
+                                        <li class="page-item @(currentPage == pageNumber ? "active" : "")">
+                                            <button class="page-link" @onclick="() => GoToPage(pageNumber)">@pageNumber</button>
+                                        </li>
+                                    }
+                                    
+                                    <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
+                                        <button class="page-link" @onclick="() => GoToPage(currentPage + 1)" disabled="@(currentPage == totalPages)">
+                                            <i class="fas fa-chevron-right"></i>
+                                        </button>
+                                    </li>
+                                </ul>
+                            </nav>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="text-center py-5">
+                        <i class="fas fa-passport fs-1 text-muted mb-3"></i>
+                        <h5 class="text-muted">No passengers found</h5>
+                        <p class="text-muted">
+                            @if (string.IsNullOrEmpty(searchTerm) && string.IsNullOrEmpty(purposeFilter))
+                            {
+                                <span>No non-visa passengers registered yet.</span>
+                            }
+                            else
+                            {
+                                <span>Try adjusting your search or filter criteria.</span>
+                            }
+                        </p>
+                        <a href="/non-visa/add" class="btn btn-primary mt-3">
+                            <i class="fas fa-plus me-2"></i>
+                            Add First Passenger
+                        </a>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<NonVisaPassenger> allPassengers = new();
+    private List<NonVisaPassenger> filteredPassengers = new();
+    private List<NonVisaPassenger> currentPagePassengers = new();
+    
+    private string searchTerm = string.Empty;
+    private string purposeFilter = string.Empty;
+    private string sortBy = "name";
+    
+    // Statistics
+    private int totalPassengers = 0;
+    private int todayArrivals = 0;
+    private int weekArrivals = 0;
+    private int businessPassengers = 0;
+    
+    // Pagination
+    private int currentPage = 1;
+    private int pageSize = 10;
+    private int totalPages => (int)Math.Ceiling((double)filteredPassengers.Count / pageSize);
+    
+    // Status message
+    private string statusMessage = string.Empty;
+    private string statusClass = string.Empty;
+    private string statusIcon = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSampleData();
+    }
+
+    private async Task LoadSampleData()
+    {
+        // Sample data for demonstration - Visa violations
+        allPassengers = new List<NonVisaPassenger>
+        {
+            new() { FirstName = "Ahmed", LastName = "Al-Mansouri", Nationality = "UAE", PassportNumber = "A1234567", 
+                   FlightNumber = "GF101", ArrivalDate = DateTime.Today, ViolationType = "No Visa", 
+                   AirportStation = "BAH Terminal 1", CreatedDate = DateTime.Now.AddDays(-5) },
+            new() { FirstName = "Sarah", LastName = "Johnson", Nationality = "UK", PassportNumber = "B7654321", 
+                   FlightNumber = "GF205", ArrivalDate = DateTime.Today.AddDays(1), ViolationType = "Expired Visa", 
+                   AirportStation = "DXB Terminal 3", CreatedDate = DateTime.Now.AddDays(-3) },
+            new() { FirstName = "Mohamed", LastName = "Hassan", Nationality = "Egypt", PassportNumber = "C9876543", 
+                   FlightNumber = "GF310", ArrivalDate = DateTime.Today.AddDays(-1), ViolationType = "Invalid Visa", 
+                   AirportStation = "DOH Terminal 1", CreatedDate = DateTime.Now.AddDays(-7) },
+            new() { FirstName = "Lisa", LastName = "Chen", Nationality = "Singapore", PassportNumber = "D1357924", 
+                   FlightNumber = "GF415", ArrivalDate = DateTime.Today.AddDays(3), ViolationType = "Wrong Visa Type", 
+                   AirportStation = "KWI Terminal 1", CreatedDate = DateTime.Now.AddDays(-2) },
+            new() { FirstName = "Omar", LastName = "Al-Rashid", Nationality = "Kuwait", PassportNumber = "E2468135", 
+                   ArrivalDate = DateTime.Today.AddDays(2), ViolationType = "No Visa", 
+                   AirportStation = "BAH Terminal 2", CreatedDate = DateTime.Now.AddDays(-1) }
+        };
+
+        CalculateStatistics();
+        FilterAndSortPassengers();
+        ShowStatusMessage("Visa violations registry loaded successfully!", "alert-warning", "fa-exclamation-triangle");
+        await Task.CompletedTask;
+    }
+
+    private void CalculateStatistics()
+    {
+        totalPassengers = allPassengers.Count;
+        todayArrivals = allPassengers.Count(p => p.ArrivalDate?.Date == DateTime.Today);
+        weekArrivals = allPassengers.Count(p => p.ArrivalDate?.Date >= DateTime.Today && p.ArrivalDate?.Date <= DateTime.Today.AddDays(7));
+        businessPassengers = allPassengers.Count(p => p.Purpose == "Business");
+    }
+
+    private void FilterAndSortPassengers()
+    {
+        var filtered = allPassengers.AsEnumerable();
+
+        // Apply search filter
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            filtered = filtered.Where(p => 
+                p.FullName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                p.Nationality.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                p.PassportNumber.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                p.ViolationType.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                p.AirportStation.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                (!string.IsNullOrEmpty(p.FlightNumber) && p.FlightNumber.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)));
+        }
+
+        // Apply violation type filter
+        if (!string.IsNullOrEmpty(purposeFilter))
+        {
+            filtered = filtered.Where(p => p.ViolationType == purposeFilter);
+        }
+
+        // Apply sorting
+        filtered = sortBy switch
+        {
+            "name" => filtered.OrderBy(p => p.FullName),
+            "arrivalDate" => filtered.OrderBy(p => p.ArrivalDate ?? DateTime.MaxValue),
+            "nationality" => filtered.OrderBy(p => p.Nationality),
+            "purpose" => filtered.OrderBy(p => p.Purpose),
+            _ => filtered.OrderBy(p => p.FullName)
+        };
+
+        filteredPassengers = filtered.ToList();
+        currentPage = 1;
+        UpdateCurrentPagePassengers();
+    }
+
+    private void UpdateCurrentPagePassengers()
+    {
+        var skip = (currentPage - 1) * pageSize;
+        currentPagePassengers = filteredPassengers.Skip(skip).Take(pageSize).ToList();
+    }
+
+    private void OnSearchChanged(ChangeEventArgs e)
+    {
+        searchTerm = e.Value?.ToString() ?? string.Empty;
+        FilterAndSortPassengers();
+    }
+
+    private void GoToPage(int page)
+    {
+        if (page >= 1 && page <= totalPages)
+        {
+            currentPage = page;
+            UpdateCurrentPagePassengers();
+        }
+    }
+
+    private string GetViolationBadgeClass(string violationType)
+    {
+        return violationType switch
+        {
+            "No Visa" => "danger",
+            "Expired Visa" => "warning", 
+            "Invalid Visa" => "secondary",
+            "Wrong Visa Type" => "info",
+            "Fake Visa" => "dark",
+            _ => "light text-dark"
+        };
+    }
+
+    private void ViewPassenger(NonVisaPassenger passenger)
+    {
+        ShowStatusMessage($"Viewing violation details for {passenger.FullName}", "alert-info", "fa-info-circle");
+    }
+
+    private void EditPassenger(NonVisaPassenger passenger)
+    {
+        ShowStatusMessage($"Edit violation record for {passenger.FullName} - coming soon!", "alert-info", "fa-edit");
+    }
+
+    private void ConfirmDelete(NonVisaPassenger passenger)
+    {
+        ShowStatusMessage($"Delete violation record for {passenger.FullName} - coming soon!", "alert-warning", "fa-trash");
+    }
+
+    private void ShowStatusMessage(string message, string cssClass, string icon)
+    {
+        statusMessage = message;
+        statusClass = cssClass;
+        statusIcon = icon;
+        StateHasChanged();
+
+        // Auto-hide success messages after 3 seconds
+        if (cssClass == "alert-success")
+        {
+            _ = Task.Delay(3000).ContinueWith(_ =>
+            {
+                statusMessage = string.Empty;
+                InvokeAsync(StateHasChanged);
+            });
+        }
+    }
+
+    public class NonVisaPassenger
+    {
+        public string FirstName { get; set; } = string.Empty;
+        public string LastName { get; set; } = string.Empty;
+        public string FullName => $"{FirstName} {LastName}";
+        public string Nationality { get; set; } = string.Empty;
+        public string PassportNumber { get; set; } = string.Empty;
+        public string FlightNumber { get; set; } = string.Empty;
+        public DateTime? ArrivalDate { get; set; }
+        public string AirportStation { get; set; } = string.Empty;
+        public string ViolationType { get; set; } = string.Empty;
+        public string Purpose { get; set; } = string.Empty;
+        public string Remarks { get; set; } = string.Empty;
+        public DateTime CreatedDate { get; set; }
+    }
+}

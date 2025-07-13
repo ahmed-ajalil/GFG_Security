@@ -1,0 +1,521 @@
+@page "/details"
+@inject IBlackListService BlackListService
+@rendermode InteractiveServer
+
+<PageTitle>BlackList Details - BlackList Management</PageTitle>
+
+<div class="fade-in">
+    <div class="container">
+        <!-- Standardized Page Header -->
+        <div class="page-header mb-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="page-title">
+                        <i class="fas fa-info-circle me-3"></i>
+                        BlackList Details
+                    </h1>
+                    <p class="page-subtitle">Detailed information about blacklisted passengers</p>
+                </div>
+                <div>
+                    <a href="/manage" class="btn btn-primary">
+                        <i class="fas fa-cog me-2"></i>
+                        Manage BlackList
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Message -->
+        @if (!string.IsNullOrEmpty(statusMessage))
+        {
+            <div class="alert @statusClass alert-dismissible fade show" role="alert">
+                <i class="fas @statusIcon me-2"></i>
+                @statusMessage
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+
+        <!-- Summary Cards -->
+        <div class="row mb-4">
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="card stats-card danger h-100">
+                    <div class="card-body text-center">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title text-uppercase mb-1">Active Bans</h6>
+                                <h2 class="mb-0 fw-bold">@activeBansCount</h2>
+                                <p class="mb-0 opacity-75">Currently Banned</p>
+                            </div>
+                            <div class="fs-1 opacity-50">
+                                <i class="fas fa-user-slash"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="card stats-card warning h-100">
+                    <div class="card-body text-center">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title text-uppercase mb-1">Expiring Soon</h6>
+                                <h2 class="mb-0 fw-bold">@expiringSoonCount</h2>
+                                <p class="mb-0 opacity-75">Within 7 Days</p>
+                            </div>
+                            <div class="fs-1 opacity-50">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="card stats-card info h-100">
+                    <div class="card-body text-center">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title text-uppercase mb-1">Long-term</h6>
+                                <h2 class="mb-0 fw-bold">@longTermCount</h2>
+                                <p class="mb-0 opacity-75">30+ Days Left</p>
+                            </div>
+                            <div class="fs-1 opacity-50">
+                                <i class="fas fa-calendar-plus"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="card stats-card success h-100">
+                    <div class="card-body text-center">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title text-uppercase mb-1">Total</h6>
+                                <h2 class="mb-0 fw-bold">@totalPassengers</h2>
+                                <p class="mb-0 opacity-75">All Records</p>
+                            </div>
+                            <div class="fs-1 opacity-50">
+                                <i class="fas fa-users"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filter and Search -->
+        <div class="card mb-4 slide-up">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-4">
+                        <div class="search-container">
+                            <i class="fas fa-search search-icon"></i>
+                            <input type="text" class="form-control" placeholder="Search passengers..." 
+                                   @bind="searchTerm" @oninput="OnSearchChanged" />
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <select class="form-select" @bind="statusFilter" @bind:after="FilterAndSortPassengers">
+                            <option value="">All Status</option>
+                            <option value="active">Active Bans</option>
+                            <option value="expiring">Expiring Soon</option>
+                            <option value="expired">Expired</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <select class="form-select" @bind="sortBy" @bind:after="FilterAndSortPassengers">
+                            <option value="name">Sort by Name</option>
+                            <option value="startDate">Sort by Start Date</option>
+                            <option value="endDate">Sort by End Date</option>
+                            <option value="daysLeft">Sort by Days Left</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Passengers Details Table -->
+        <div class="card slide-up">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-table me-2"></i>
+                    Detailed Passenger Information (@filteredPassengers.Count)
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                @if (filteredPassengers.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Name</th>
+                                    <th scope="col">Start Date</th>
+                                    <th scope="col">End Date</th>
+                                    <th scope="col">Days Left</th>
+                                    <th scope="col">Status</th>
+                                    <th scope="col">Reason</th>
+                                    <th scope="col" class="text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var passenger in currentPagePassengers)
+                                {
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="avatar-sm me-3">
+                                                    <div class="avatar-title rounded-circle bg-light text-primary">
+                                                        @passenger.FirstName.Substring(0, 1)@passenger.LastName.Substring(0, 1)
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <h6 class="mb-0 fw-semibold">@passenger.FullName</h6>
+                                                    <small class="text-muted">ID: #@passenger.Id</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="fw-medium">@passenger.StartDate.ToString("MMM dd, yyyy")</span><br/>
+                                            <small class="text-muted">@passenger.StartDate.ToString("dddd")</small>
+                                        </td>
+                                        <td>
+                                            <span class="fw-medium">@passenger.EndDate.ToString("MMM dd, yyyy")</span><br/>
+                                            <small class="text-muted">@passenger.EndDate.ToString("dddd")</small>
+                                        </td>
+                                        <td>
+                                            @if (passenger.DaysRemaining > 0)
+                                            {
+                                                <span class="badge @(passenger.DaysRemaining <= 7 ? "bg-warning" : "bg-info")">
+                                                    @passenger.DaysRemaining days left
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-success">Expired</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <span class="badge @(passenger.IsActive ? "bg-danger" : "bg-secondary")">
+                                                <i class="fas @(passenger.IsActive ? "fa-user-slash" : "fa-check") me-1"></i>
+                                                @passenger.Status
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="reason-cell" style="max-width: 200px;">
+                                                <span class="fw-medium">@(passenger.Reason.Length > 50 ? passenger.Reason.Substring(0, 50) + "..." : passenger.Reason)</span>
+                                            </div>
+                                        </td>
+                                        <td class="text-center">
+                                            <div class="btn-group" role="group">
+                                                <button type="button" class="btn btn-outline-info btn-sm" 
+                                                        @onclick="() => ViewPassengerDetails(passenger)"
+                                                        title="View Details">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                                <a href="/manage" class="btn btn-outline-secondary btn-sm" title="Manage">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    @if (totalPages > 1)
+                    {
+                        <div class="card-footer">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="text-muted">
+                                    Showing @((currentPage - 1) * pageSize + 1) to @Math.Min(currentPage * pageSize, filteredPassengers.Count) 
+                                    of @filteredPassengers.Count entries
+                                </div>
+                                <nav aria-label="Page navigation">
+                                    <ul class="pagination pagination-sm mb-0">
+                                        <li class="page-item @(currentPage == 1 ? "disabled" : "")">
+                                            <button class="page-link" @onclick="() => GoToPage(1)" disabled="@(currentPage == 1)">
+                                                <i class="fas fa-angle-double-left"></i>
+                                            </button>
+                                        </li>
+                                        <li class="page-item @(currentPage == 1 ? "disabled" : "")">
+                                            <button class="page-link" @onclick="() => GoToPage(currentPage - 1)" disabled="@(currentPage == 1)">
+                                                <i class="fas fa-angle-left"></i>
+                                            </button>
+                                        </li>
+                                        
+                                        @for (int i = Math.Max(1, currentPage - 2); i <= Math.Min(totalPages, currentPage + 2); i++)
+                                        {
+                                            int pageNumber = i;
+                                            <li class="page-item @(currentPage == pageNumber ? "active" : "")">
+                                                <button class="page-link" @onclick="() => GoToPage(pageNumber)">
+                                                    @pageNumber
+                                                </button>
+                                            </li>
+                                        }
+                                        
+                                        <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
+                                            <button class="page-link" @onclick="() => GoToPage(currentPage + 1)" disabled="@(currentPage == totalPages)">
+                                                <i class="fas fa-angle-right"></i>
+                                            </button>
+                                        </li>
+                                        <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
+                                            <button class="page-link" @onclick="() => GoToPage(totalPages)" disabled="@(currentPage == totalPages)">
+                                                <i class="fas fa-angle-double-right"></i>
+                                            </button>
+                                        </li>
+                                    </ul>
+                                </nav>
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="text-center py-5">
+                        <i class="fas fa-search fs-1 text-muted mb-3"></i>
+                        <h5 class="text-muted">No passengers found</h5>
+                        <p class="text-muted">
+                            @if (string.IsNullOrEmpty(searchTerm) && string.IsNullOrEmpty(statusFilter))
+                            {
+                                <span>No blacklisted passengers match the current criteria.</span>
+                            }
+                            else
+                            {
+                                <span>Try adjusting your search or filter criteria.</span>
+                            }
+                        </p>
+                        <a href="/manage" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>
+                            Add First Passenger
+                        </a>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Standardized Passenger Details Modal -->
+@if (selectedPassenger != null)
+{
+    <div class="modal fade show d-block" tabindex="-1" role="dialog" style="z-index: 1050;">
+        <div class="modal-backdrop fade show" @onclick="CloseModal" style="z-index: 1040;"></div>
+        <div class="modal-dialog modal-xl" role="document" style="z-index: 1060;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-user-circle me-2"></i>
+                        Passenger Details - @selectedPassenger.FullName
+                    </h5>
+                    <button type="button" class="btn-close" @onclick="CloseModal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="fw-bold text-primary mb-3">
+                                <i class="fas fa-user me-2"></i>
+                                Personal Information
+                            </h6>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Full Name</label>
+                                <div class="form-control-plaintext">@selectedPassenger.FullName</div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Passenger ID</label>
+                                <div class="form-control-plaintext">#@selectedPassenger.Id</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="fw-bold text-danger mb-3">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                Status
+                            </h6>
+                            <div class="mb-3">
+                                @if (selectedPassenger.IsActive)
+                                {
+                                    <span class="badge bg-danger fs-6">
+                                        <i class="fas fa-user-slash me-1"></i>Active Ban
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-success fs-6">
+                                        <i class="fas fa-check me-1"></i>Expired Ban
+                                    </span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                    <hr />
+                    <div class="mb-4">
+                        <h6 class="fw-bold text-danger mb-3">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Reason for Blacklisting
+                        </h6>
+                        <div class="p-3 bg-light rounded border-start border-4 border-danger">
+                            @selectedPassenger.Reason
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" @onclick="CloseModal">
+                        <i class="fas fa-times me-2"></i>Close
+                    </button>
+                    <a href="/manage" class="btn btn-primary">
+                        <i class="fas fa-edit me-2"></i>Edit Passenger
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<BlackListPassenger> allPassengers = new();
+    private List<BlackListPassenger> filteredPassengers = new();
+    private List<BlackListPassenger> currentPagePassengers = new();
+    private BlackListPassenger? selectedPassenger;
+    
+    private string searchTerm = string.Empty;
+    private string statusFilter = string.Empty;
+    private string sortBy = "name";
+    
+    // Statistics
+    private int activeBansCount = 0;
+    private int expiringSoonCount = 0;
+    private int longTermCount = 0;
+    private int totalPassengers = 0;
+    
+    // Pagination
+    private int currentPage = 1;
+    private int pageSize = 10;
+    private int totalPages => (int)Math.Ceiling((double)filteredPassengers.Count / pageSize);
+    
+    // Status message
+    private string statusMessage = string.Empty;
+    private string statusClass = string.Empty;
+    private string statusIcon = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadPassengers();
+    }
+
+    private async Task LoadPassengers()
+    {
+        try
+        {
+            allPassengers = await BlackListService.GetAllPassengersAsync();
+            CalculateStatistics();
+            FilterAndSortPassengers();
+            ShowStatusMessage("Passenger details loaded successfully!", "alert-success", "fa-check-circle");
+        }
+        catch (Exception ex)
+        {
+            ShowStatusMessage($"Error loading passenger details: {ex.Message}", "alert-danger", "fa-exclamation-triangle");
+        }
+    }
+
+    private void CalculateStatistics()
+    {
+        activeBansCount = allPassengers.Count(p => p.IsActive);
+        expiringSoonCount = allPassengers.Count(p => p.IsActive && p.DaysRemaining <= 7);
+        longTermCount = allPassengers.Count(p => p.IsActive && p.DaysRemaining > 30);
+        totalPassengers = allPassengers.Count;
+    }
+
+    private void FilterAndSortPassengers()
+    {
+        var filtered = allPassengers.AsEnumerable();
+
+        // Apply search filter
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            var searchLower = searchTerm.ToLower();
+            filtered = filtered.Where(p => 
+                p.FirstName.ToLower().Contains(searchLower) || 
+                p.LastName.ToLower().Contains(searchLower) ||
+                p.Reason.ToLower().Contains(searchLower));
+        }
+
+        // Apply status filter
+        if (!string.IsNullOrEmpty(statusFilter))
+        {
+            filtered = statusFilter switch
+            {
+                "active" => filtered.Where(p => p.IsActive),
+                "expiring" => filtered.Where(p => p.IsActive && p.DaysRemaining <= 7),
+                "expired" => filtered.Where(p => !p.IsActive),
+                _ => filtered
+            };
+        }
+
+        // Apply sorting
+        filtered = sortBy switch
+        {
+            "name" => filtered.OrderBy(p => p.LastName).ThenBy(p => p.FirstName),
+            "startDate" => filtered.OrderByDescending(p => p.StartDate),
+            "endDate" => filtered.OrderBy(p => p.EndDate),
+            "daysLeft" => filtered.OrderBy(p => p.DaysRemaining),
+            _ => filtered.OrderBy(p => p.LastName)
+        };
+
+        filteredPassengers = filtered.ToList();
+        currentPage = 1;
+        UpdateCurrentPagePassengers();
+    }
+
+    private void UpdateCurrentPagePassengers()
+    {
+        var skip = (currentPage - 1) * pageSize;
+        currentPagePassengers = filteredPassengers.Skip(skip).Take(pageSize).ToList();
+    }
+
+    private void OnSearchChanged(ChangeEventArgs e)
+    {
+        searchTerm = e.Value?.ToString() ?? string.Empty;
+        FilterAndSortPassengers();
+    }
+
+    private void GoToPage(int page)
+    {
+        if (page >= 1 && page <= totalPages)
+        {
+            currentPage = page;
+            UpdateCurrentPagePassengers();
+        }
+    }
+
+    private void ViewPassengerDetails(BlackListPassenger passenger)
+    {
+        selectedPassenger = passenger;
+    }
+
+    private void CloseModal()
+    {
+        selectedPassenger = null;
+    }
+
+    private void ShowStatusMessage(string message, string cssClass, string icon)
+    {
+        statusMessage = message;
+        statusClass = cssClass;
+        statusIcon = icon;
+
+        // Auto-hide success messages after 3 seconds
+        if (cssClass == "alert-success")
+        {
+            _ = Task.Delay(3000).ContinueWith(_ =>
+            {
+                statusMessage = string.Empty;
+                InvokeAsync(StateHasChanged);
+            });
+        }
+    }
+}

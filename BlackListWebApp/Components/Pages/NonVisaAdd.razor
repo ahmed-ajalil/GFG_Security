@@ -1,0 +1,254 @@
+@page "/non-visa/add"
+@rendermode InteractiveServer
+@using System.ComponentModel.DataAnnotations
+
+<PageTitle>Record Visa Violation - BlackList Management</PageTitle>
+
+<div class="fade-in">
+    <div class="container">
+        <!-- Standardized Page Header -->
+        <div class="page-header mb-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="page-title">
+                        <i class="fas fa-exclamation-triangle me-3"></i>
+                        Record Visa Violation
+                    </h1>
+                    <p class="page-subtitle">Record passengers who arrived without valid visa documentation</p>
+                </div>
+                <div>
+                    <a href="/non-visa/list" class="btn btn-outline-danger">
+                        <i class="fas fa-list me-2"></i>
+                        View Violations
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Message -->
+        @if (!string.IsNullOrEmpty(statusMessage))
+        {
+            <div class="alert @statusClass alert-dismissible fade show" role="alert">
+                <i class="fas @statusIcon me-2"></i>
+                @statusMessage
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+
+        <!-- Add Passenger Form -->
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="card slide-up">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-file-alt me-2"></i>
+                            Visa Violation Report
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <EditForm Model="newPassenger" OnValidSubmit="HandleValidSubmit">
+                            <DataAnnotationsValidator />
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="firstName" class="form-label fw-semibold">First Name *</label>
+                                    <InputText id="firstName" class="form-control" @bind-Value="newPassenger.FirstName" placeholder="Enter first name" />
+                                    <ValidationMessage For="@(() => newPassenger.FirstName)" class="text-danger small" />
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="lastName" class="form-label fw-semibold">Last Name *</label>
+                                    <InputText id="lastName" class="form-control" @bind-Value="newPassenger.LastName" placeholder="Enter last name" />
+                                    <ValidationMessage For="@(() => newPassenger.LastName)" class="text-danger small" />
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="nationality" class="form-label fw-semibold">Nationality *</label>
+                                    <InputText id="nationality" class="form-control" @bind-Value="newPassenger.Nationality" placeholder="Enter nationality" />
+                                    <ValidationMessage For="@(() => newPassenger.Nationality)" class="text-danger small" />
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="passportNumber" class="form-label fw-semibold">Passport Number *</label>
+                                    <InputText id="passportNumber" class="form-control" @bind-Value="newPassenger.PassportNumber" placeholder="Enter passport number" />
+                                    <ValidationMessage For="@(() => newPassenger.PassportNumber)" class="text-danger small" />
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="flightNumber" class="form-label fw-semibold">Flight Number *</label>
+                                    <InputText id="flightNumber" class="form-control" @bind-Value="newPassenger.FlightNumber" placeholder="e.g., GF123" />
+                                    <ValidationMessage For="@(() => newPassenger.FlightNumber)" class="text-danger small" />
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="arrivalDate" class="form-label fw-semibold">Arrival Date *</label>
+                                    <InputDate id="arrivalDate" class="form-control" @bind-Value="newPassenger.ArrivalDate" />
+                                    <ValidationMessage For="@(() => newPassenger.ArrivalDate)" class="text-danger small" />
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="airportStation" class="form-label fw-semibold">Airport Station *</label>
+                                    <InputSelect id="airportStation" class="form-select" @bind-Value="newPassenger.AirportStation">
+                                        <option value="">Select airport station...</option>
+                                        <option value="BAH Terminal 1">BAH Terminal 1</option>
+                                        <option value="BAH Terminal 2">BAH Terminal 2</option>
+                                        <option value="DXB Terminal 1">DXB Terminal 1</option>
+                                        <option value="DXB Terminal 3">DXB Terminal 3</option>
+                                        <option value="DOH Terminal 1">DOH Terminal 1</option>
+                                        <option value="KWI Terminal 1">KWI Terminal 1</option>
+                                    </InputSelect>
+                                    <ValidationMessage For="@(() => newPassenger.AirportStation)" class="text-danger small" />
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="violationType" class="form-label fw-semibold">Violation Type *</label>
+                                    <InputSelect id="violationType" class="form-select" @bind-Value="newPassenger.ViolationType">
+                                        <option value="">Select violation type...</option>
+                                        <option value="No Visa">No Visa - Arrived without required visa</option>
+                                        <option value="Expired Visa">Expired Visa - Visa expired before arrival</option>
+                                        <option value="Invalid Visa">Invalid Visa - Visa not valid for entry</option>
+                                        <option value="Wrong Visa Type">Wrong Visa Type - Incorrect visa category</option>
+                                        <option value="Fake Visa">Fake Visa - Fraudulent visa documentation</option>
+                                    </InputSelect>
+                                    <ValidationMessage For="@(() => newPassenger.ViolationType)" class="text-danger small" />
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="purpose" class="form-label fw-semibold">Intended Purpose of Visit</label>
+                                <InputSelect id="purpose" class="form-select" @bind-Value="newPassenger.Purpose">
+                                    <option value="">Select intended purpose...</option>
+                                    <option value="Business">Business</option>
+                                    <option value="Tourism">Tourism</option>
+                                    <option value="Transit">Transit</option>
+                                    <option value="Visit">Visit Family/Friends</option>
+                                    <option value="Medical">Medical Treatment</option>
+                                    <option value="Work">Work/Employment</option>
+                                    <option value="Study">Study/Education</option>
+                                    <option value="Other">Other</option>
+                                </InputSelect>
+                            </div>
+
+                            <div class="mb-4">
+                                <label for="remarks" class="form-label fw-semibold">Violation Details & Actions Taken</label>
+                                <InputTextArea id="remarks" class="form-control" rows="4" @bind-Value="newPassenger.Remarks" 
+                                             placeholder="Describe the circumstances of the violation, actions taken by immigration officers, and any additional relevant information..." />
+                            </div>
+
+                            <div class="d-flex justify-content-between">
+                                <a href="/non-visa/list" class="btn btn-secondary">
+                                    <i class="fas fa-arrow-left me-2"></i>
+                                    Back to Violations
+                                </a>
+                                <button type="submit" class="btn btn-danger" disabled="@isSubmitting">
+                                    @if (isSubmitting)
+                                    {
+                                        <i class="fas fa-spinner fa-spin me-2"></i>
+                                        <span>Recording...</span>
+                                    }
+                                    else
+                                    {
+                                        <i class="fas fa-exclamation-triangle me-2"></i>
+                                        <span>Record Violation</span>
+                                    }
+                                </button>
+                            </div>
+                        </EditForm>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private NonVisaPassenger newPassenger = new();
+    private bool isSubmitting = false;
+    
+    // Status message
+    private string statusMessage = string.Empty;
+    private string statusClass = string.Empty;
+    private string statusIcon = string.Empty;
+
+    private async Task HandleValidSubmit()
+    {
+        try
+        {
+            isSubmitting = true;
+            newPassenger.CreatedDate = DateTime.Now;
+            
+            // Simulate API call - replace with actual service call
+            await Task.Delay(1000);
+            
+            ShowStatusMessage($"Visa violation for {newPassenger.FullName} recorded successfully!", "alert-warning", "fa-exclamation-triangle");
+            
+            // Reset form
+            newPassenger = new();
+        }
+        catch (Exception ex)
+        {
+            ShowStatusMessage($"Error adding passenger: {ex.Message}", "alert-danger", "fa-exclamation-triangle");
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private void ShowStatusMessage(string message, string cssClass, string icon)
+    {
+        statusMessage = message;
+        statusClass = cssClass;
+        statusIcon = icon;
+        StateHasChanged();
+
+        // Auto-hide success messages after 3 seconds
+        if (cssClass == "alert-success")
+        {
+            _ = Task.Delay(3000).ContinueWith(_ =>
+            {
+                statusMessage = string.Empty;
+                InvokeAsync(StateHasChanged);
+            });
+        }
+    }
+
+    public class NonVisaPassenger
+    {
+        [Required(ErrorMessage = "First Name is required")]
+        public string FirstName { get; set; } = string.Empty;
+        
+        [Required(ErrorMessage = "Last Name is required")]
+        public string LastName { get; set; } = string.Empty;
+        
+        public string FullName => $"{FirstName} {LastName}";
+        
+        [Required(ErrorMessage = "Nationality is required")]
+        public string Nationality { get; set; } = string.Empty;
+        
+        [Required(ErrorMessage = "Passport Number is required")]
+        public string PassportNumber { get; set; } = string.Empty;
+        
+        [Required(ErrorMessage = "Flight Number is required")]
+        public string FlightNumber { get; set; } = string.Empty;
+        
+        [Required(ErrorMessage = "Arrival Date is required")]
+        public DateTime? ArrivalDate { get; set; }
+        
+        [Required(ErrorMessage = "Airport Station is required")]
+        public string AirportStation { get; set; } = string.Empty;
+        
+        [Required(ErrorMessage = "Violation Type is required")]
+        public string ViolationType { get; set; } = string.Empty;
+        
+        public string Purpose { get; set; } = string.Empty;
+        public string Remarks { get; set; } = string.Empty;
+        public DateTime CreatedDate { get; set; }
+    }
+}

@@ -1,0 +1,370 @@
+@page "/"
+@inject IBlackListService BlackListService
+@rendermode InteractiveServer
+
+<PageTitle>Dashboard - BlackList Management</PageTitle>
+
+<div class="fade-in">
+    <div class="container">
+        <!-- Standardized Page Header -->
+        <div class="page-header mb-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="page-title">
+                        <i class="fas fa-tachometer-alt me-3"></i>
+                        Dashboard
+                    </h1>
+                    <p class="page-subtitle">Overview of BlackList Management System</p>
+                </div>
+              
+            </div>
+        </div>
+        <!-- Status Message -->
+        @if (!string.IsNullOrEmpty(statusMessage))
+        {
+            <div class="alert @statusClass alert-dismissible fade show" role="alert">
+                <i class="fas @statusIcon me-2"></i>
+                @statusMessage
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+
+        <!-- Statistics Cards -->
+        <div class="row mb-4">
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="card stats-card primary h-100">
+                    <div class="card-body text-center">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title text-uppercase mb-1">Today</h6>
+                                <h2 class="mb-0 fw-bold">@todayCount</h2>
+                                <p class="mb-0 opacity-75">New Entries</p>
+                            </div>
+                            <div class="fs-1 opacity-50">
+                                <i class="fas fa-calendar-day"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="card stats-card warning h-100">
+                    <div class="card-body text-center">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title text-uppercase mb-1">This Week</h6>
+                                <h2 class="mb-0 fw-bold">@weekCount</h2>
+                                <p class="mb-0 opacity-75">New Entries</p>
+                            </div>
+                            <div class="fs-1 opacity-50">
+                                <i class="fas fa-calendar-week"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="card stats-card success h-100">
+                    <div class="card-body text-center">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title text-uppercase mb-1">This Month</h6>
+                                <h2 class="mb-0 fw-bold">@monthCount</h2>
+                                <p class="mb-0 opacity-75">New Entries</p>
+                            </div>
+                            <div class="fs-1 opacity-50">
+                                <i class="fas fa-calendar-alt"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="card stats-card danger h-100">
+                    <div class="card-body text-center">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title text-uppercase mb-1">Active Bans</h6>
+                                <h2 class="mb-0 fw-bold">@activeCount</h2>
+                                <p class="mb-0 opacity-75">Currently banned</p>
+                            </div>
+                            <div class="fs-1 opacity-50">
+                                <i class="fas fa-user-slash"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="row">
+            <div class="col-lg-8 mb-4">
+                <div class="card slide-up">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-clock me-2"></i>
+                            Recent BlackList Activity
+                        </h5>
+                    </div>
+                    <div class="card-body p-0">
+                        @if (weekPassengers.Any())
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Passenger</th>
+                                            <th>Date Added</th>
+                                            <th>Status</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var passenger in weekPassengers.Take(5))
+                                        {
+                                            <tr>
+                                                <td>
+                                                    <div class="d-flex align-items-center">
+                                                        <div>
+                                                            <div class="fw-bold">@passenger.FullName</div>
+                                                            <small class="text-muted">@passenger.Reason.Substring(0, Math.Min(50, passenger.Reason.Length))...</small>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td>@passenger.CreatedDate.ToString("MMM dd")</td>
+                                                <td>
+                                                    @if (passenger.IsActive)
+                                                    {
+                                                        <span class="badge bg-danger">Active</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="badge bg-secondary">Expired</span>
+                                                    }
+                                                </td>
+                                                <td>
+                                                    <button class="btn btn-sm btn-ghost" @onclick="() => ViewPassengerDetails(passenger)">
+                                                        <i class="fas fa-eye"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="text-center py-4">
+                                <i class="fas fa-inbox fs-1 text-muted mb-3"></i>
+                                <h6 class="text-muted">No recent activity</h6>
+                            </div>
+                        }
+                    </div>
+                    <div class="card-footer">
+                        <a href="/manage" class="btn btn-primary">
+                            <i class="fas fa-cog me-2"></i>
+                            Manage BlackList
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4 mb-4">
+                <div class="card slide-up">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-chart-pie me-2"></i>
+                            Quick Stats
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="text-muted">Active Bans</span>
+                                <span class="fw-bold text-danger">@activeCount</span>
+                            </div>
+                            <div class="progress" style="height: 8px;">
+                                <div class="progress-bar bg-danger" style="width: @(activeCount > 0 ? (activeCount * 100.0 / totalCount) : 0)%"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="text-muted">Expired Bans</span>
+                                <span class="fw-bold text-success">@(totalCount - activeCount)</span>
+                            </div>
+                            <div class="progress" style="height: 8px;">
+                                <div class="progress-bar bg-success" style="width: @((totalCount - activeCount) > 0 ? ((totalCount - activeCount) * 100.0 / totalCount) : 0)%"></div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="text-muted">Total Entries</span>
+                                <span class="fw-bold text-primary">@totalCount</span>
+                            </div>
+                            <div class="progress" style="height: 8px;">
+                                <div class="progress-bar bg-primary" style="width: 100%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <a href="/details" class="btn btn-outline-primary w-100">
+                            <i class="fas fa-chart-line me-2"></i>
+                            View Detailed Report
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Passenger Details Modal -->
+@if (selectedPassenger != null)
+{
+    <div class="modal fade show d-block" tabindex="-1" role="dialog" style="z-index: 1050;">
+        <div class="modal-backdrop fade show" @onclick="CloseModal" style="z-index: 1040;"></div>
+        <div class="modal-dialog modal-lg" role="document" style="z-index: 1060;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-user me-2"></i>
+                        Passenger Details
+                    </h5>
+                    <button type="button" class="btn-close" @onclick="CloseModal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Full Name</label>
+                                <p class="form-control-plaintext">@selectedPassenger.FullName</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Status</label>
+                                <p class="form-control-plaintext">
+                                    @if (selectedPassenger.IsActive)
+                                    {
+                                        <span class="badge bg-danger">Active Ban</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-success">Expired</span>
+                                    }
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Start Date</label>
+                                <p class="form-control-plaintext">@selectedPassenger.StartDate.ToString("MMM dd, yyyy")</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">End Date</label>
+                                <p class="form-control-plaintext">@selectedPassenger.EndDate.ToString("MMM dd, yyyy")</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Reason</label>
+                        <div class="p-3 bg-light rounded">
+                            @selectedPassenger.Reason
+                        </div>
+                    </div>
+                    @if (selectedPassenger.DaysRemaining > 0)
+                    {
+                        <div class="alert alert-warning">
+                            <i class="fas fa-clock me-2"></i>
+                            <strong>@selectedPassenger.DaysRemaining days remaining</strong> until ban expires
+                        </div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" @onclick="CloseModal">
+                        <i class="fas fa-times me-2"></i>Close
+                    </button>
+                    <a href="/manage" class="btn btn-primary">
+                        <i class="fas fa-edit me-2"></i>Manage BlackList
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<BlackListPassenger> weekPassengers = new();
+    private int todayCount = 0;
+    private int weekCount = 0;
+    private int monthCount = 0;
+    private int activeCount = 0;
+    private int totalCount = 0;
+    private BlackListPassenger? selectedPassenger;
+    private string statusMessage = string.Empty;
+    private string statusClass = string.Empty;
+    private string statusIcon = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDashboardData();
+    }
+
+    private async Task LoadDashboardData()
+    {
+        try
+        {
+            var allPassengers = await BlackListService.GetAllPassengersAsync();
+            weekPassengers = await BlackListService.GetWeekPassengersAsync();
+            todayCount = await BlackListService.GetTodayCountAsync();
+            weekCount = await BlackListService.GetWeekCountAsync();
+            monthCount = await BlackListService.GetMonthCountAsync();
+            activeCount = allPassengers.Count(p => p.IsActive);
+            totalCount = allPassengers.Count;
+
+            ShowStatusMessage("Dashboard data loaded successfully!", "alert-success", "fa-check-circle");
+        }
+        catch (Exception ex)
+        {
+            ShowStatusMessage($"Error loading dashboard data: {ex.Message}", "alert-danger", "fa-exclamation-triangle");
+        }
+    }
+
+    private void ViewPassengerDetails(BlackListPassenger passenger)
+    {
+        selectedPassenger = passenger;
+    }
+
+    private void CloseModal()
+    {
+        selectedPassenger = null;
+    }
+
+    private void ShowStatusMessage(string message, string cssClass, string icon)
+    {
+        statusMessage = message;
+        statusClass = cssClass;
+        statusIcon = icon;
+
+        // Auto-hide success messages after 3 seconds
+        if (cssClass == "alert-success")
+        {
+            _ = Task.Delay(3000).ContinueWith(_ =>
+            {
+                statusMessage = string.Empty;
+                InvokeAsync(StateHasChanged);
+            });
+        }
+    }
+}

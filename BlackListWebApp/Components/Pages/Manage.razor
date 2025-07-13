@@ -1,0 +1,579 @@
+@page "/manage"
+@inject IBlackListService BlackListService
+@rendermode InteractiveServer
+
+<PageTitle>Manage BlackList - BlackList Management</PageTitle>
+
+<div class="fade-in">
+    <div class="container">
+        <!-- Standardized Page Header -->
+        <div class="page-header mb-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="page-title">
+                        <i class="fas fa-cog me-3"></i>
+                        Manage BlackList
+                    </h1>
+                    <p class="page-subtitle">Add, edit, and manage blacklisted passengers</p>
+                </div>
+                <div>
+                    <button type="button" class="btn btn-primary" @onclick="ShowAddModal">
+                        <i class="fas fa-plus me-2"></i>
+                        Add New Passenger
+                    </button>
+                </div>
+            </div>
+        </div>
+        <!-- Status Message -->
+        @if (!string.IsNullOrEmpty(statusMessage))
+        {
+            <div class="alert @statusClass alert-dismissible fade show" role="alert">
+                <i class="fas @statusIcon me-2"></i>
+                @statusMessage
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+
+        <!-- Controls Section -->
+        <div class="card mb-4 slide-up">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <div class="search-container">
+                            <i class="fas fa-search search-icon"></i>
+                            <input type="text" class="form-control" placeholder="Search by name or reason..." 
+                                   @bind="searchTerm" @oninput="OnSearchChanged" />
+                        </div>
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <button class="btn btn-primary" @onclick="ShowAddModal">
+                            <i class="fas fa-plus me-2"></i>
+                            Add New Passenger
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Passengers Table -->
+        <div class="card slide-up">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-list me-2"></i>
+                    BlackList Passengers (@filteredPassengers.Count)
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                @if (filteredPassengers.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Reason</th>
+                                    <th>Start Date</th>
+                                    <th>End Date</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var passenger in currentPagePassengers)
+                                {
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="avatar-sm me-3">
+                                                    <div class="avatar-title rounded-circle bg-light text-primary">
+                                                        @passenger.FirstName.Substring(0, 1)@passenger.LastName.Substring(0, 1)
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <h6 class="mb-0 fw-semibold">@passenger.FullName</h6>
+                                                    <small class="text-muted">ID: #@passenger.Id</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="text-truncate" style="max-width: 200px;" title="@passenger.Reason">
+                                                @passenger.Reason
+                                            </div>
+                                        </td>
+                                        <td>@passenger.StartDate.ToString("MMM dd, yyyy")</td>
+                                        <td>@passenger.EndDate.ToString("MMM dd, yyyy")</td>
+                                        <td>
+                                            @if (passenger.IsActive)
+                                            {
+                                                <span class="badge bg-danger">
+                                                    <i class="fas fa-ban me-1"></i>Active
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-success">
+                                                    <i class="fas fa-check me-1"></i>Expired
+                                                </span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <button class="btn btn-sm btn-ghost" @onclick="() => ViewPassenger(passenger)" title="View Details">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-secondary" @onclick="() => EditPassenger(passenger)" title="Edit">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-danger" @onclick="() => ShowDeleteConfirmation(passenger)" title="Delete">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    @if (totalPages > 1)
+                    {
+                        <div class="card-footer">
+                            <nav aria-label="Pagination">
+                                <ul class="pagination justify-content-center mb-0">
+                                    <li class="page-item @(currentPage == 1 ? "disabled" : "")">
+                                        <button class="page-link" @onclick="() => GoToPage(currentPage - 1)" disabled="@(currentPage == 1)">
+                                            <i class="fas fa-chevron-left"></i>
+                                        </button>
+                                    </li>
+                                    
+                                    @for (int i = 1; i <= totalPages; i++)
+                                    {
+                                        var pageNumber = i;
+                                        <li class="page-item @(currentPage == pageNumber ? "active" : "")">
+                                            <button class="page-link" @onclick="() => GoToPage(pageNumber)">@pageNumber</button>
+                                        </li>
+                                    }
+                                    
+                                    <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
+                                        <button class="page-link" @onclick="() => GoToPage(currentPage + 1)" disabled="@(currentPage == totalPages)">
+                                            <i class="fas fa-chevron-right"></i>
+                                        </button>
+                                    </li>
+                                </ul>
+                            </nav>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="text-center py-5">
+                        <i class="fas fa-inbox fs-1 text-muted mb-3"></i>
+                        <h5 class="text-muted">No passengers found</h5>
+                        <p class="text-muted">
+                            @if (string.IsNullOrEmpty(searchTerm))
+                            {
+                                <span>Start by adding a new passenger to the blacklist.</span>
+                            }
+                            else
+                            {
+                                <span>Try adjusting your search criteria.</span>
+                            }
+                        </p>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add/Edit Modal -->
+@if (showModal)
+{
+    <div class="modal fade show d-block" tabindex="-1" role="dialog" style="z-index: 1050;">
+        <div class="modal-backdrop fade show" @onclick="CloseModal" style="z-index: 1040;"></div>
+        <div class="modal-dialog modal-lg" role="document" style="z-index: 1060;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas @(isEditMode ? "fa-edit" : "fa-plus") me-2"></i>
+                        @(isEditMode ? "Edit" : "Add New") Passenger
+                    </h5>
+                    <button type="button" class="btn-close" @onclick="CloseModal" aria-label="Close"></button>
+                </div>
+                <EditForm Model="currentPassenger" OnValidSubmit="SavePassenger">
+                    <DataAnnotationsValidator />
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">First Name *</label>
+                                    <InputText @bind-Value="currentPassenger.FirstName" class="form-control" placeholder="Enter first name" />
+                                    <ValidationMessage For="@(() => currentPassenger.FirstName)" />
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Last Name *</label>
+                                    <InputText @bind-Value="currentPassenger.LastName" class="form-control" placeholder="Enter last name" />
+                                    <ValidationMessage For="@(() => currentPassenger.LastName)" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Reason for Blacklisting *</label>
+                            <InputTextArea @bind-Value="currentPassenger.Reason" class="form-control" rows="3" placeholder="Enter detailed reason for blacklisting..." />
+                            <ValidationMessage For="@(() => currentPassenger.Reason)" />
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Start Date *</label>
+                                    <InputDate @bind-Value="currentPassenger.StartDate" class="form-control" />
+                                    <ValidationMessage For="@(() => currentPassenger.StartDate)" />
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">End Date *</label>
+                                    <InputDate @bind-Value="currentPassenger.EndDate" class="form-control" />
+                                    <ValidationMessage For="@(() => currentPassenger.EndDate)" />
+                                </div>
+                            </div>
+                        </div>
+                        @if (currentPassenger.EndDate < currentPassenger.StartDate)
+                        {
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                End date cannot be earlier than start date.
+                            </div>
+                        }
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" @onclick="CloseModal">
+                            <i class="fas fa-times me-2"></i>Cancel
+                        </button>
+                        <button type="submit" class="btn btn-primary" disabled="@(currentPassenger.EndDate < currentPassenger.StartDate)">
+                            <i class="fas @(isEditMode ? "fa-save" : "fa-plus") me-2"></i>
+                            @(isEditMode ? "Update" : "Add") Passenger
+                        </button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- View Details Modal -->
+@if (selectedPassenger != null && !showModal)
+{
+    <div class="modal fade show d-block" tabindex="-1" role="dialog" style="z-index: 1050;">
+        <div class="modal-backdrop fade show" @onclick="CloseViewModal" style="z-index: 1040;"></div>
+        <div class="modal-dialog modal-lg" role="document" style="z-index: 1060;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-user me-2"></i>
+                        Passenger Details
+                    </h5>
+                    <button type="button" class="btn-close" @onclick="CloseViewModal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <h4 class="text-primary">@selectedPassenger.FullName</h4>
+                            <p class="text-muted">Passenger ID: @selectedPassenger.Id</p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            @if (selectedPassenger.IsActive)
+                            {
+                                <span class="badge bg-danger fs-6">
+                                    <i class="fas fa-ban me-1"></i>Active Ban
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-success fs-6">
+                                    <i class="fas fa-check me-1"></i>Expired Ban
+                                </span>
+                            }
+                        </div>
+                    </div>
+                    
+                    <hr />
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Start Date</label>
+                                <p class="form-control-plaintext">@selectedPassenger.StartDate.ToString("MMMM dd, yyyy")</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">End Date</label>
+                                <p class="form-control-plaintext">@selectedPassenger.EndDate.ToString("MMMM dd, yyyy")</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Reason for Blacklisting</label>
+                        <div class="p-3 bg-light rounded">
+                            @selectedPassenger.Reason
+                        </div>
+                    </div>
+                    
+                    @if (selectedPassenger.DaysRemaining > 0)
+                    {
+                        <div class="alert alert-warning">
+                            <i class="fas fa-clock me-2"></i>
+                            <strong>@selectedPassenger.DaysRemaining days remaining</strong> until ban expires
+                        </div>
+                    }
+                    else if (selectedPassenger.EndDate < DateTime.Today)
+                    {
+                        <div class="alert alert-success">
+                            <i class="fas fa-check me-2"></i>
+                            This ban has <strong>expired</strong>
+                        </div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" @onclick="CloseViewModal">
+                        <i class="fas fa-times me-2"></i>Close
+                    </button>
+                    <button type="button" class="btn btn-outline-primary" @onclick="() => EditPassenger(selectedPassenger)">
+                        <i class="fas fa-edit me-2"></i>Edit
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Delete Confirmation Modal -->
+@if (passengerToDelete != null)
+{
+    <div class="modal fade show d-block" tabindex="-1" role="dialog" style="z-index: 1050;">
+        <div class="modal-backdrop fade show" @onclick="CloseDeleteModal" style="z-index: 1040;"></div>
+        <div class="modal-dialog" role="document" style="z-index: 1060;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title text-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Confirm Deletion
+                    </h5>
+                    <button type="button" class="btn-close" @onclick="CloseDeleteModal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete <strong>@passengerToDelete.FullName</strong> from the blacklist?</p>
+                    <div class="alert alert-warning">
+                        <i class="fas fa-info-circle me-2"></i>
+                        This action cannot be undone.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" @onclick="CloseDeleteModal">
+                        <i class="fas fa-times me-2"></i>Cancel
+                    </button>
+                    <button type="button" class="btn btn-outline-danger" @onclick="DeletePassenger">
+                        <i class="fas fa-trash me-2"></i>Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<BlackListPassenger> allPassengers = new();
+    private List<BlackListPassenger> filteredPassengers = new();
+    private List<BlackListPassenger> currentPagePassengers = new();
+    private BlackListPassenger currentPassenger = new();
+    private BlackListPassenger? selectedPassenger;
+    private BlackListPassenger? passengerToDelete;
+    
+    private string searchTerm = string.Empty;
+    private bool showModal = false;
+    private bool isEditMode = false;
+    
+    // Pagination
+    private int currentPage = 1;
+    private int pageSize = 10;
+    private int totalPages => (int)Math.Ceiling((double)filteredPassengers.Count / pageSize);
+    
+    // Status message
+    private string statusMessage = string.Empty;
+    private string statusClass = string.Empty;
+    private string statusIcon = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadPassengers();
+    }
+
+    private async Task LoadPassengers()
+    {
+        try
+        {
+            allPassengers = await BlackListService.GetAllPassengersAsync();
+            await FilterPassengers();
+            ShowStatusMessage("Passengers loaded successfully!", "alert-success", "fa-check-circle");
+        }
+        catch (Exception ex)
+        {
+            ShowStatusMessage($"Error loading passengers: {ex.Message}", "alert-danger", "fa-exclamation-triangle");
+        }
+    }
+
+    private async Task FilterPassengers()
+    {
+        if (string.IsNullOrWhiteSpace(searchTerm))
+        {
+            filteredPassengers = allPassengers;
+        }
+        else
+        {
+            filteredPassengers = await BlackListService.SearchPassengersAsync(searchTerm);
+        }
+        
+        currentPage = 1;
+        UpdateCurrentPagePassengers();
+    }
+
+    private void UpdateCurrentPagePassengers()
+    {
+        var skip = (currentPage - 1) * pageSize;
+        currentPagePassengers = filteredPassengers.Skip(skip).Take(pageSize).ToList();
+    }
+
+    private async Task OnSearchChanged(ChangeEventArgs e)
+    {
+        searchTerm = e.Value?.ToString() ?? string.Empty;
+        await FilterPassengers();
+    }
+
+    private void GoToPage(int page)
+    {
+        if (page >= 1 && page <= totalPages)
+        {
+            currentPage = page;
+            UpdateCurrentPagePassengers();
+        }
+    }
+
+    private void ShowAddModal()
+    {
+        currentPassenger = new BlackListPassenger
+        {
+            StartDate = DateTime.Today,
+            EndDate = DateTime.Today.AddDays(30)
+        };
+        isEditMode = false;
+        showModal = true;
+    }
+
+    private void EditPassenger(BlackListPassenger passenger)
+    {
+        currentPassenger = new BlackListPassenger
+        {
+            Id = passenger.Id,
+            FirstName = passenger.FirstName,
+            LastName = passenger.LastName,
+            Reason = passenger.Reason,
+            StartDate = passenger.StartDate,
+            EndDate = passenger.EndDate,
+            CreatedDate = passenger.CreatedDate,
+            UpdatedDate = passenger.UpdatedDate
+        };
+        isEditMode = true;
+        showModal = true;
+        selectedPassenger = null;
+    }
+
+    private void ViewPassenger(BlackListPassenger passenger)
+    {
+        selectedPassenger = passenger;
+    }
+
+    private void ShowDeleteConfirmation(BlackListPassenger passenger)
+    {
+        passengerToDelete = passenger;
+    }
+
+    private async Task SavePassenger()
+    {
+        try
+        {
+            if (isEditMode)
+            {
+                await BlackListService.UpdatePassengerAsync(currentPassenger);
+                ShowStatusMessage($"Passenger {currentPassenger.FullName} updated successfully!", "alert-success", "fa-check-circle");
+            }
+            else
+            {
+                await BlackListService.AddPassengerAsync(currentPassenger);
+                ShowStatusMessage($"Passenger {currentPassenger.FullName} added successfully!", "alert-success", "fa-check-circle");
+            }
+            
+            await LoadPassengers();
+            CloseModal();
+        }
+        catch (Exception ex)
+        {
+            ShowStatusMessage($"Error saving passenger: {ex.Message}", "alert-danger", "fa-exclamation-triangle");
+        }
+    }
+
+    private async Task DeletePassenger()
+    {
+        try
+        {
+            if (passengerToDelete != null)
+            {
+                await BlackListService.DeletePassengerAsync(passengerToDelete.Id);
+                ShowStatusMessage($"Passenger {passengerToDelete.FullName} deleted successfully!", "alert-success", "fa-check-circle");
+                await LoadPassengers();
+                CloseDeleteModal();
+            }
+        }
+        catch (Exception ex)
+        {
+            ShowStatusMessage($"Error deleting passenger: {ex.Message}", "alert-danger", "fa-exclamation-triangle");
+        }
+    }
+
+    private void CloseModal()
+    {
+        showModal = false;
+        currentPassenger = new();
+    }
+
+    private void CloseViewModal()
+    {
+        selectedPassenger = null;
+    }
+
+    private void CloseDeleteModal()
+    {
+        passengerToDelete = null;
+    }
+
+    private void ShowStatusMessage(string message, string cssClass, string icon)
+    {
+        statusMessage = message;
+        statusClass = cssClass;
+        statusIcon = icon;
+
+        // Auto-hide success messages after 5 seconds
+        if (cssClass == "alert-success")
+        {
+            _ = Task.Delay(5000).ContinueWith(_ =>
+            {
+                statusMessage = string.Empty;
+                InvokeAsync(StateHasChanged);
+            });
+        }
+    }
+}
