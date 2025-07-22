@@ -1,21 +1,8 @@
+using BlackListWebApp.Interfaces;
 using BlackListWebApp.Models;
 
 namespace BlackListWebApp.Services
 {
-    public interface IBlackListService
-    {
-        Task<List<BlackListPassenger>> GetAllPassengersAsync();
-        Task<BlackListPassenger?> GetPassengerByIdAsync(int id);
-        Task<BlackListPassenger> AddPassengerAsync(BlackListPassenger passenger);
-        Task<BlackListPassenger> UpdatePassengerAsync(BlackListPassenger passenger);
-        Task<bool> DeletePassengerAsync(int id);
-        Task<List<BlackListPassenger>> SearchPassengersAsync(string searchTerm);
-        Task<int> GetTodayCountAsync();
-        Task<int> GetWeekCountAsync();
-        Task<int> GetMonthCountAsync();
-        Task<List<BlackListPassenger>> GetWeekPassengersAsync();
-    }
-
     public class BlackListService : IBlackListService
     {
         private readonly List<BlackListPassenger> _passengers;

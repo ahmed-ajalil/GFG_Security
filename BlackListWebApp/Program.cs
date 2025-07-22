@@ -1,11 +1,19 @@
 using BlackListWebApp.Components;
+using BlackListWebApp.Data;
+using BlackListWebApp.Interfaces;
 using BlackListWebApp.Services;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseNpgsql(connectionString)
+);
 
 // Register application services
 builder.Services.AddScoped<IBlackListService, BlackListService>();
