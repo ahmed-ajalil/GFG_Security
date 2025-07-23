@@ -39,14 +39,17 @@
         <div class="card mb-4 slide-up">
             <div class="card-body">
                 <div class="row align-items-center">
-                    <div class="col-md-6">
+                    <div class="col-md-8">
                         <div class="search-container">
                             <i class="fas fa-search search-icon"></i>
-                            <input type="text" class="form-control" placeholder="Search by name or reason..." 
-                                   @bind="searchTerm" @oninput="OnSearchChanged" />
+                            <input type="text"
+                                   class="form-control"
+                                   placeholder="Search by name, reason, PNR, passport..."
+                                   value="@searchTerm"
+                                   @oninput="OnSearchChanged" />
                         </div>
                     </div>
-                    <div class="col-md-6 text-end">
+                    <div class="col-md-4 text-end">
                         <button class="btn btn-primary" @onclick="ShowAddModal">
                             <i class="fas fa-plus me-2"></i>
                             Add New Passenger
@@ -339,7 +342,42 @@
                     </div>
                     
                     <hr />
-                    
+
+                    <!-- ADDED: Section for optional details -->
+                    <h6 class="text-muted fw-bold mb-3">Passenger Information</h6>
+                    <div class="row">
+                        @if (!string.IsNullOrWhiteSpace(selectedPassenger.Nationality))
+                        {
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Nationality</label>
+                                <p class="form-control-plaintext ps-2 border-start">@selectedPassenger.Nationality</p>
+                            </div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(selectedPassenger.PassportNumber))
+                        {
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Passport Number</label>
+                                <p class="form-control-plaintext ps-2 border-start">@selectedPassenger.PassportNumber</p>
+                            </div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(selectedPassenger.PNR))
+                        {
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">PNR</label>
+                                <p class="form-control-plaintext ps-2 border-start">@selectedPassenger.PNR</p>
+                            </div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(selectedPassenger.Mobile))
+                        {
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Mobile</label>
+                                <p class="form-control-plaintext ps-2 border-start">@selectedPassenger.Mobile</p>
+                            </div>
+                        }
+                    </div>
+
+                    <h6 class="text-muted fw-bold mt-2 mb-3">Blacklist Details</h6>
+
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
@@ -361,8 +399,8 @@
                             @selectedPassenger.Reason
                         </div>
                     </div>
-                    
-                    @if (selectedPassenger.DaysRemaining > 0)
+
+                    @if (selectedPassenger.DaysRemaining > 0 && selectedPassenger.IsActive)
                     {
                         <div class="alert alert-warning">
                             <i class="fas fa-clock me-2"></i>
@@ -425,22 +463,23 @@
 }
 
 @code {
-    private List<BlackListPassenger> allPassengers = new();
+    // SIMPLIFIED: Removed allPassengers list, as we will always fetch from the service.
     private List<BlackListPassenger> filteredPassengers = new();
     private List<BlackListPassenger> currentPagePassengers = new();
+
     private BlackListPassenger currentPassenger = new();
     private BlackListPassenger? selectedPassenger;
     private BlackListPassenger? passengerToDelete;
-    
+
     private string searchTerm = string.Empty;
     private bool showModal = false;
     private bool isEditMode = false;
-    
+
     // Pagination
     private int currentPage = 1;
     private int pageSize = 10;
     private int totalPages => (int)Math.Ceiling((double)filteredPassengers.Count / pageSize);
-    
+
     // Status message
     private string statusMessage = string.Empty;
     private string statusClass = string.Empty;
@@ -448,16 +487,15 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadPassengers();
+        await LoadAndFilterPassengers();
     }
 
-    private async Task LoadPassengers()
+    private async Task LoadAndFilterPassengers()
     {
         try
         {
-            allPassengers = await BlackListService.GetAllPassengersAsync();
-            await FilterPassengers();
-            ShowStatusMessage("Passengers loaded successfully!", "alert-success", "fa-check-circle");
+            filteredPassengers = await BlackListService.SearchPassengersAsync(searchTerm);
+            GoToPage(1); // Reset to first page after loading/filtering
         }
         catch (Exception ex)
         {
@@ -465,31 +503,17 @@
         }
     }
 
-    private async Task FilterPassengers()
-    {
-        if (string.IsNullOrWhiteSpace(searchTerm))
-        {
-            filteredPassengers = allPassengers;
-        }
-        else
-        {
-            filteredPassengers = await BlackListService.SearchPassengersAsync(searchTerm);
-        }
-        
-        currentPage = 1;
-        UpdateCurrentPagePassengers();
-    }
-
     private void UpdateCurrentPagePassengers()
     {
         var skip = (currentPage - 1) * pageSize;
         currentPagePassengers = filteredPassengers.Skip(skip).Take(pageSize).ToList();
+        StateHasChanged(); // Ensure UI updates
     }
 
     private async Task OnSearchChanged(ChangeEventArgs e)
     {
         searchTerm = e.Value?.ToString() ?? string.Empty;
-        await FilterPassengers();
+        await LoadAndFilterPassengers();
     }
 
     private void GoToPage(int page)
@@ -499,35 +523,40 @@
             currentPage = page;
             UpdateCurrentPagePassengers();
         }
+        else if (totalPages == 0) // Handle case where there are no results
+        {
+            currentPage = 1;
+            UpdateCurrentPagePassengers();
+        }
     }
 
     private void ShowAddModal()
     {
-        currentPassenger = new BlackListPassenger
-        {
-            StartDate = DateTime.Today,
-            EndDate = DateTime.Today.AddDays(30)
-        };
+        currentPassenger = new BlackListPassenger(); // Model defaults are sufficient
         isEditMode = false;
         showModal = true;
     }
 
     private void EditPassenger(BlackListPassenger passenger)
     {
+        // This is the critical fix. We copy all properties from the selected passenger.
         currentPassenger = new BlackListPassenger
         {
             Id = passenger.Id,
             FirstName = passenger.FirstName,
             LastName = passenger.LastName,
+            Nationality = passenger.Nationality,
+            PNR = passenger.PNR,
+            PassportNumber = passenger.PassportNumber,
+            Mobile = passenger.Mobile,
             Reason = passenger.Reason,
             StartDate = passenger.StartDate,
             EndDate = passenger.EndDate,
-            CreatedDate = passenger.CreatedDate,
-            UpdatedDate = passenger.UpdatedDate
+            CreatedDate = passenger.CreatedDate // Preserve original creation date
         };
         isEditMode = true;
         showModal = true;
-        selectedPassenger = null;
+        selectedPassenger = null; // Close the view modal if it was open
     }
 
     private void ViewPassenger(BlackListPassenger passenger)
@@ -554,8 +583,8 @@
                 await BlackListService.AddPassengerAsync(currentPassenger);
                 ShowStatusMessage($"Passenger {currentPassenger.FullName} added successfully!", "alert-success", "fa-check-circle");
             }
-            
-            await LoadPassengers();
+
+            await LoadAndFilterPassengers(); // Reload data to show changes
             CloseModal();
         }
         catch (Exception ex)
@@ -572,7 +601,7 @@
             {
                 await BlackListService.DeletePassengerAsync(passengerToDelete.Id);
                 ShowStatusMessage($"Passenger {passengerToDelete.FullName} deleted successfully!", "alert-success", "fa-check-circle");
-                await LoadPassengers();
+                await LoadAndFilterPassengers(); // Reload data
                 CloseDeleteModal();
             }
         }

@@ -62,18 +62,14 @@ namespace BlackListWebApp.Services
                 var existingPassenger = await _dbContext.BlackListPassengers.FirstOrDefaultAsync(p => p.Id == passenger.Id);
                 if (existingPassenger != null)
                 {
-                    existingPassenger.FirstName = passenger.FirstName;
-                    existingPassenger.LastName = passenger.LastName;
-                    existingPassenger.Nationality = passenger.Nationality;
-                    existingPassenger.PNR = passenger.PNR;
-                    existingPassenger.PassportNumber = passenger.PassportNumber;
-                    existingPassenger.Mobile = passenger.Mobile;
-                    existingPassenger.Reason = passenger.Reason;
-                    existingPassenger.StartDate = passenger.StartDate;
-                    existingPassenger.EndDate = passenger.EndDate;
+                    // Using EF Core's entry state is often cleaner than manual assignment
+                    _dbContext.Entry(existingPassenger).CurrentValues.SetValues(passenger);
                     existingPassenger.UpdatedDate = DateTime.UtcNow;
+                    // Note: SetValues will overwrite CreatedDate. Let's preserve it.
+                    existingPassenger.CreatedDate = _dbContext.Entry(existingPassenger).OriginalValues.GetValue<DateTime>(nameof(BlackListPassenger.CreatedDate));
+
                     _dbContext.BlackListPassengers.Update(existingPassenger);
-                    _dbContext.SaveChanges();
+                    await _dbContext.SaveChangesAsync(); // CHANGED: Use async version
 
                     return existingPassenger;
                 }
@@ -93,7 +89,7 @@ namespace BlackListWebApp.Services
                 if (passenger != null)
                 {
                     _dbContext.BlackListPassengers.Remove(passenger);
-                    _dbContext.SaveChanges();
+                    await _dbContext.SaveChangesAsync();
                     return true;
                 }
                 return false;
@@ -109,76 +105,59 @@ namespace BlackListWebApp.Services
             try
             {
                 if (string.IsNullOrWhiteSpace(searchTerm))
+                {
                     return await GetAllPassengersAsync();
+                }
 
-                searchTerm = searchTerm.ToLower();
-                return _dbContext.BlackListPassengers.Where(p =>
-                    p.FirstName.ToLower().Contains(searchTerm) ||
-                    p.LastName.ToLower().Contains(searchTerm) ||
-                    p.Reason.ToLower().Contains(searchTerm))
-                    .OrderByDescending(p => p.CreatedDate)
-                    .ToList();
+                var lowerCaseSearchTerm = searchTerm.ToLower();
+
+                // IMPROVED: Enhanced search query
+                var query = _dbContext.BlackListPassengers.Where(p =>
+                    p.FirstName.ToLower().Contains(lowerCaseSearchTerm) ||
+                    p.LastName.ToLower().Contains(lowerCaseSearchTerm) ||
+                    p.Reason.ToLower().Contains(lowerCaseSearchTerm) ||
+                    (p.Nationality != null && p.Nationality.ToLower().Contains(lowerCaseSearchTerm)) ||
+                    (p.PNR != null && p.PNR.ToLower().Contains(lowerCaseSearchTerm)) ||
+                    (p.PassportNumber != null && p.PassportNumber.ToLower().Contains(lowerCaseSearchTerm)) ||
+                    (p.Mobile != null && p.Mobile.ToLower().Contains(lowerCaseSearchTerm))
+                );
+
+                return await query.OrderByDescending(p => p.CreatedDate).ToListAsync(); // CHANGED: Use async version
             }
             catch (Exception ex)
             {
+                // Consider logging the exception ex
                 return new List<BlackListPassenger>();
             }
         }
 
         public async Task<int> GetTodayCountAsync()
         {
-            try
-            {
-                return await _dbContext.BlackListPassengers.CountAsync(p => p.CreatedDate.Date == DateTime.Today.ToUniversalTime());
-            }
-            catch (Exception ex)
-            {
-                return 0;
-            }
+            var todayUtc = DateTime.UtcNow.Date;
+            return await _dbContext.BlackListPassengers.CountAsync(p => p.CreatedDate.Date == todayUtc);
 
         }
 
         public async Task<int> GetWeekCountAsync()
         {
-            try
-            {
-                var weekAgo = DateTime.Today.AddDays(-7).ToUniversalTime();
-                return await _dbContext.BlackListPassengers.CountAsync(p => p.CreatedDate >= weekAgo);
-            }
-            catch (Exception ex)
-            {
-                return 0;
-            }
+            var weekAgoUtc = DateTime.UtcNow.AddDays(-7);
+            return await _dbContext.BlackListPassengers.CountAsync(p => p.CreatedDate >= weekAgoUtc);
         }
 
         public async Task<int> GetMonthCountAsync()
         {
-            try
-            {
-                var monthAgo = DateTime.Today.AddDays(-30).ToUniversalTime();
-                return await _dbContext.BlackListPassengers.CountAsync(p => p.CreatedDate >= monthAgo);
-            }
-            catch (Exception ex)
-            {
-                return 0;
-            }
+            var monthAgoUtc = DateTime.UtcNow.AddMonths(-1); // More accurate for a month
+            return await _dbContext.BlackListPassengers.CountAsync(p => p.CreatedDate >= monthAgoUtc);
 
         }
 
         public async Task<List<BlackListPassenger>> GetWeekPassengersAsync()
         {
-            try
-            {
-                var weekAgo = DateTime.Today.AddDays(-7).ToUniversalTime();
-                return await _dbContext.BlackListPassengers
-                    .Where(p => p.CreatedDate >= weekAgo)
-                    .OrderByDescending(p => p.CreatedDate)
-                    .ToListAsync();
-            }
-            catch (Exception ex)
-            {
-                return new List<BlackListPassenger>();
-            }
+            var weekAgoUtc = DateTime.UtcNow.AddDays(-7);
+            return await _dbContext.BlackListPassengers
+                .Where(p => p.CreatedDate >= weekAgoUtc)
+                .OrderByDescending(p => p.CreatedDate)
+                .ToListAsync();
         }
     }
 }
