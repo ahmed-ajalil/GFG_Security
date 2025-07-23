@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace BlackListWebApp.Models
 {
@@ -53,5 +54,8 @@ namespace BlackListWebApp.Models
 
         [Required]
         public DateTime CreatedDate { get; set; }
+
+        [NotMapped]
+        public string FullName => $"{FirstName} {LastName}";
     }
 }

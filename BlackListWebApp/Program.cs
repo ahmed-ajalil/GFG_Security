@@ -17,6 +17,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 // Register application services
 builder.Services.AddScoped<IBlackListService, BlackListService>();
+builder.Services.AddScoped<INonVisaService, NonVisaService>();
 
 var app = builder.Build();
 
