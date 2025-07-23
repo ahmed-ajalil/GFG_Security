@@ -38,9 +38,20 @@ namespace BlackListWebApp.Services
             var existingPassenger = await _dbContext.NonVisaPassengers.FindAsync(passenger.Id);
             if (existingPassenger != null)
             {
-                // Note: The NonVisaPassenger model doesn't have an UpdatedDate.
-                // If it did, we would set it here: existingPassenger.UpdatedDate = DateTime.UtcNow;
-                _dbContext.Entry(existingPassenger).CurrentValues.SetValues(passenger);
+                existingPassenger.FirstName = passenger.FirstName;
+                existingPassenger.LastName = passenger.LastName;
+                existingPassenger.Nationality = passenger.Nationality;
+                existingPassenger.PNR = passenger.PNR;
+                existingPassenger.PassportNumber = passenger.PassportNumber;
+                existingPassenger.Mobile = passenger.Mobile;
+                existingPassenger.FlightNumber = passenger.FlightNumber;
+                existingPassenger.ArrivalDate = passenger.ArrivalDate;
+                existingPassenger.AirportStation = passenger.AirportStation;
+                existingPassenger.ViolationType = passenger.ViolationType;
+                existingPassenger.Purpose = passenger.Purpose;
+                existingPassenger.Remarks = passenger.Remarks;
+                existingPassenger.Status = passenger.Status;
+
                 await _dbContext.SaveChangesAsync();
                 return existingPassenger;
             }
@@ -59,30 +70,43 @@ namespace BlackListWebApp.Services
             return false;
         }
 
-        public async Task<List<NonVisaPassenger>> SearchAndFilterPassengersAsync(string searchTerm, string violationType)
+        public async Task<List<NonVisaPassenger>> GetFilteredPassengersAsync(string searchTerm, string violationType, string sortBy)
         {
             var query = _dbContext.NonVisaPassengers.AsQueryable();
 
-            // Apply violation type filter
+            // Apply violation type filter (this is fine)
             if (!string.IsNullOrWhiteSpace(violationType))
             {
                 query = query.Where(p => p.ViolationType == violationType);
             }
 
-            // Apply search term filter (case-insensitive)
+            // Apply search term filter (this is the critical fix)
             if (!string.IsNullOrWhiteSpace(searchTerm))
             {
-                var searchPattern = $"%{searchTerm}%";
+                string lowerCaseSearchTerm = searchTerm.ToLower();
+
+                // This new WHERE clause is now completely safe from null reference errors
                 query = query.Where(p =>
-                    EF.Functions.ILike(p.FirstName, searchPattern) ||
-                    EF.Functions.ILike(p.LastName, searchPattern) ||
-                    EF.Functions.ILike(p.Nationality, searchPattern) ||
-                    EF.Functions.ILike(p.PassportNumber, searchPattern) ||
-                    EF.Functions.ILike(p.FlightNumber, searchPattern) ||
-                    EF.Functions.ILike(p.AirportStation, searchPattern));
+                    (p.FirstName.ToLower() + " " + p.LastName.ToLower()).Contains(lowerCaseSearchTerm) ||
+                    (p.Nationality ?? "").ToLower().Contains(lowerCaseSearchTerm) ||
+                    (p.PassportNumber ?? "").ToLower().Contains(lowerCaseSearchTerm) ||
+                    (p.FlightNumber ?? "").ToLower().Contains(lowerCaseSearchTerm) ||
+                    (p.AirportStation.ToLower().Contains(lowerCaseSearchTerm)) || // AirportStation is required, so no null check needed
+                    (p.PNR ?? "").ToLower().Contains(lowerCaseSearchTerm) ||
+                    (p.Mobile ?? "").ToLower().Contains(lowerCaseSearchTerm)
+                );
             }
 
-            return await query.OrderByDescending(p => p.CreatedDate).ToListAsync();
+            // Apply sorting (this is fine)
+            query = sortBy switch
+            {
+                "name" => query.OrderBy(p => p.FirstName).ThenBy(p => p.LastName),
+                "nationality" => query.OrderBy(p => p.Nationality),
+                "violationType" => query.OrderBy(p => p.ViolationType),
+                _ => query.OrderByDescending(p => p.ArrivalDate)
+            };
+
+            return await query.ToListAsync();
         }
 
         public async Task<int> GetTotalCountAsync()

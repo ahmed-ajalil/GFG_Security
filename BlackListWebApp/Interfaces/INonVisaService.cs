@@ -12,7 +12,7 @@ namespace BlackListWebApp.Interfaces
         Task<bool> DeletePassengerAsync(int id);
 
         // Dashboard / Page specific methods
-        Task<List<NonVisaPassenger>> SearchAndFilterPassengersAsync(string searchTerm, string violationType);
+        Task<List<NonVisaPassenger>> GetFilteredPassengersAsync(string searchTerm, string violationType, string sortBy);
         Task<int> GetTotalCountAsync();
         Task<int> GetTodayCountAsync();
         Task<int> GetWeekCountAsync();
