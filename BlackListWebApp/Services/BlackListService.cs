@@ -44,7 +44,7 @@ namespace BlackListWebApp.Services
         {
             try
             {
-                passenger.CreatedDate = DateTime.Now;
+                passenger.CreatedDate = DateTime.UtcNow;
                 await _dbContext.BlackListPassengers.AddAsync(passenger);
                 _dbContext.SaveChanges();
                 return passenger;
@@ -71,7 +71,7 @@ namespace BlackListWebApp.Services
                     existingPassenger.Reason = passenger.Reason;
                     existingPassenger.StartDate = passenger.StartDate;
                     existingPassenger.EndDate = passenger.EndDate;
-                    existingPassenger.UpdatedDate = DateTime.Now;
+                    existingPassenger.UpdatedDate = DateTime.UtcNow;
                     _dbContext.BlackListPassengers.Update(existingPassenger);
                     _dbContext.SaveChanges();
 
@@ -129,7 +129,7 @@ namespace BlackListWebApp.Services
         {
             try
             {
-                return await _dbContext.BlackListPassengers.CountAsync(p => p.CreatedDate.Date == DateTime.Today);
+                return await _dbContext.BlackListPassengers.CountAsync(p => p.CreatedDate.Date == DateTime.Today.ToUniversalTime());
             }
             catch (Exception ex)
             {
@@ -142,7 +142,7 @@ namespace BlackListWebApp.Services
         {
             try
             {
-                var weekAgo = DateTime.Today.AddDays(-7);
+                var weekAgo = DateTime.Today.AddDays(-7).ToUniversalTime();
                 return await _dbContext.BlackListPassengers.CountAsync(p => p.CreatedDate >= weekAgo);
             }
             catch (Exception ex)
@@ -155,7 +155,7 @@ namespace BlackListWebApp.Services
         {
             try
             {
-                var monthAgo = DateTime.Today.AddDays(-30);
+                var monthAgo = DateTime.Today.AddDays(-30).ToUniversalTime();
                 return await _dbContext.BlackListPassengers.CountAsync(p => p.CreatedDate >= monthAgo);
             }
             catch (Exception ex)
@@ -169,7 +169,7 @@ namespace BlackListWebApp.Services
         {
             try
             {
-                var weekAgo = DateTime.Today.AddDays(-7);
+                var weekAgo = DateTime.Today.AddDays(-7).ToUniversalTime();
                 return await _dbContext.BlackListPassengers
                     .Where(p => p.CreatedDate >= weekAgo)
                     .OrderByDescending(p => p.CreatedDate)

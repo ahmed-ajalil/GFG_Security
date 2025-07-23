@@ -205,6 +205,7 @@
                 <EditForm Model="currentPassenger" OnValidSubmit="SavePassenger">
                     <DataAnnotationsValidator />
                     <div class="modal-body">
+                        <!-- === Personal Information === -->
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
@@ -221,6 +222,42 @@
                                 </div>
                             </div>
                         </div>
+                        <!-- === Optional Passenger Details === -->
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Nationality</label>
+                                    <InputText @bind-Value="currentPassenger.Nationality" class="form-control" placeholder="e.g., American" />
+                                    <ValidationMessage For="@(() => currentPassenger.Nationality)" />
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">PNR (Booking Reference)</label>
+                                    <InputText @bind-Value="currentPassenger.PNR" class="form-control" placeholder="e.g., R8T3Y1" />
+                                    <ValidationMessage For="@(() => currentPassenger.PNR)" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Passport Number</label>
+                                    <InputText @bind-Value="currentPassenger.PassportNumber" class="form-control" placeholder="Enter passport number" />
+                                    <ValidationMessage For="@(() => currentPassenger.PassportNumber)" />
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Mobile</label>
+                                    <InputText @bind-Value="currentPassenger.Mobile" class="form-control" placeholder="Enter mobile number" />
+                                    <ValidationMessage For="@(() => currentPassenger.Mobile)" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- === Blacklist Details === -->
                         <div class="mb-3">
                             <label class="form-label">Reason for Blacklisting *</label>
                             <InputTextArea @bind-Value="currentPassenger.Reason" class="form-control" rows="3" placeholder="Enter detailed reason for blacklisting..." />
