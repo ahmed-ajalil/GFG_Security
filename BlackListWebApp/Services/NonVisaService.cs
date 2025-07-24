@@ -27,35 +27,65 @@ namespace BlackListWebApp.Services
 
         public async Task<NonVisaPassenger> AddPassengerAsync(NonVisaPassenger passenger)
         {
-            passenger.CreatedDate = DateTime.UtcNow;
-            await _dbContext.NonVisaPassengers.AddAsync(passenger);
+            var newPassenger = new NonVisaPassenger
+            {
+                // Map properties from the incoming object
+                FirstName = passenger.FirstName,
+                LastName = passenger.LastName,
+                Nationality = passenger.Nationality,
+                PNR = passenger.PNR,
+                PassportNumber = passenger.PassportNumber,
+                Mobile = passenger.Mobile,
+                FlightNumber = passenger.FlightNumber,
+                AirportStation = passenger.AirportStation,
+                ViolationType = passenger.ViolationType,
+                Purpose = passenger.Purpose,
+                Remarks = passenger.Remarks,
+
+                // --- LOGIC AND STATE SET ON THE SERVER ---
+
+                // The service is responsible for setting the initial status.
+                // Do not trust the client to provide this.
+                Status = "Pending Review",
+
+                // Standardize the incoming date to UTC at midnight.
+                ArrivalDate = DateTime.SpecifyKind(passenger.ArrivalDate.Date, DateTimeKind.Utc),
+
+                // Set the creation timestamp on the server.
+                CreatedDate = DateTime.UtcNow,
+            };
+
+            await _dbContext.NonVisaPassengers.AddAsync(newPassenger);
             await _dbContext.SaveChangesAsync();
-            return passenger;
+            return newPassenger;
         }
 
         public async Task<NonVisaPassenger?> UpdatePassengerAsync(NonVisaPassenger passenger)
         {
             var existingPassenger = await _dbContext.NonVisaPassengers.FindAsync(passenger.Id);
-            if (existingPassenger != null)
+            if (existingPassenger == null)
             {
-                existingPassenger.FirstName = passenger.FirstName;
-                existingPassenger.LastName = passenger.LastName;
-                existingPassenger.Nationality = passenger.Nationality;
-                existingPassenger.PNR = passenger.PNR;
-                existingPassenger.PassportNumber = passenger.PassportNumber;
-                existingPassenger.Mobile = passenger.Mobile;
-                existingPassenger.FlightNumber = passenger.FlightNumber;
-                existingPassenger.ArrivalDate = passenger.ArrivalDate;
-                existingPassenger.AirportStation = passenger.AirportStation;
-                existingPassenger.ViolationType = passenger.ViolationType;
-                existingPassenger.Purpose = passenger.Purpose;
-                existingPassenger.Remarks = passenger.Remarks;
-                existingPassenger.Status = passenger.Status;
-
-                await _dbContext.SaveChangesAsync();
-                return existingPassenger;
+                return null;
             }
-            return null;
+
+            existingPassenger.FirstName = passenger.FirstName;
+            existingPassenger.LastName = passenger.LastName;
+            existingPassenger.Nationality = passenger.Nationality;
+            existingPassenger.PNR = passenger.PNR;
+            existingPassenger.PassportNumber = passenger.PassportNumber;
+            existingPassenger.Mobile = passenger.Mobile;
+            existingPassenger.FlightNumber = passenger.FlightNumber;
+            existingPassenger.AirportStation = passenger.AirportStation;
+            existingPassenger.ViolationType = passenger.ViolationType;
+            existingPassenger.Purpose = passenger.Purpose;
+            existingPassenger.Remarks = passenger.Remarks;
+            existingPassenger.Status = passenger.Status;
+
+            // Standardize the incoming date to UTC at midnight.
+            existingPassenger.ArrivalDate = DateTime.SpecifyKind(passenger.ArrivalDate.Date, DateTimeKind.Utc);
+
+            await _dbContext.SaveChangesAsync();
+            return existingPassenger;
         }
 
         public async Task<bool> DeletePassengerAsync(int id)
@@ -122,9 +152,12 @@ namespace BlackListWebApp.Services
 
         public async Task<int> GetWeekCountAsync()
         {
-            var startOfWeek = DateTime.UtcNow.Date.AddDays(-(int)DateTime.UtcNow.DayOfWeek);
-            var endOfWeek = startOfWeek.AddDays(7);
-            return await _dbContext.NonVisaPassengers.CountAsync(p => p.ArrivalDate >= startOfWeek && p.ArrivalDate < endOfWeek);
+            //var startOfWeek = DateTime.UtcNow.Date.AddDays(-(int)DateTime.UtcNow.DayOfWeek);
+            //var endOfWeek = startOfWeek.AddDays(7);
+            //return await _dbContext.NonVisaPassengers.CountAsync(p => p.ArrivalDate >= startOfWeek && p.ArrivalDate < endOfWeek);
+
+            var weekAgoUtc = DateTime.UtcNow.Date.AddDays(-7);
+            return await _dbContext.NonVisaPassengers.CountAsync(p => p.ArrivalDate.Date >= weekAgoUtc);
         }
 
 

@@ -42,8 +42,9 @@ namespace BlackListWebApp.Models
         public DateTime? UpdatedDate { get; set; }
 
         public string FullName => $"{FirstName} {LastName}";
-        public bool IsActive => DateTime.Today >= StartDate && DateTime.Today <= EndDate;
+        public bool IsActive => DateTime.UtcNow.Date >= StartDate.Date && DateTime.UtcNow.Date <= EndDate.Date;
         public string Status => IsActive ? "Active" : "Inactive";
-        public int DaysRemaining => EndDate > DateTime.Today ? (EndDate - DateTime.Today).Days : 0;
+        public int DaysRemaining => EndDate.Date > DateTime.UtcNow.Date ? (EndDate.Date - DateTime.UtcNow.Date).Days : 0;
     }
 }
+    

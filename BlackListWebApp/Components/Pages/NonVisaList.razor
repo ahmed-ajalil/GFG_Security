@@ -16,7 +16,8 @@
                     <h1 class="page-title"><i class="fas fa-exclamation-triangle me-3"></i>Visa Violations Registry</h1>
                     <p class="page-subtitle">Track and manage passengers who violated visa requirements</p>
                 </div>
-                <button @onclick="ShowAddModal" class="btn btn-danger"><i class="fas fa-plus me-2"></i>Record New Violation</button>
+                @* <button @onclick="ShowAddModal" class="btn btn-danger"><i class="fas fa-plus me-2"></i>Record New Violation</button> *@
+                <a href="/non-visa/add" class="btn btn-danger"><i class="fas fa-plus me-2"></i>Record New Violation</a>
             </div>
         </div>
 
@@ -227,10 +228,11 @@
                                 <span>Try adjusting your search or filter criteria.</span>
                             }
                         </p>
-                        <button @onclick="ShowAddModal" class="btn btn-danger mt-3">
+                        @* <button @onclick="ShowAddModal" class="btn btn-danger mt-3">
                             <i class="fas fa-plus me-2"></i>
                             Record New Violation
-                        </button>
+                        </button> *@
+                        <a href="/non-visa/add" class="btn btn-danger"><i class="fas fa-plus me-2"></i>Record New Violation</a>
                     </div>
                 }
             </div>

@@ -53,7 +53,7 @@ namespace BlackListWebApp.Models
         public string Status { get; set; }
 
         [Required]
-        public DateTime CreatedDate { get; set; }
+        public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
 
         [NotMapped]
         public string FullName => $"{FirstName} {LastName}";

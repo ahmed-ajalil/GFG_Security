@@ -217,9 +217,11 @@
                                                         title="View Details">
                                                     <i class="fas fa-eye"></i>
                                                 </button>
-                                                <a href="/manage" class="btn btn-outline-secondary btn-sm" title="Manage">
+                                                <button type="button" class="btn btn-outline-secondary btn-sm"
+                                                        @onclick="() => EditPassenger(passenger)"
+                                                        title="Edit">
                                                     <i class="fas fa-edit"></i>
-                                                </a>
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>
@@ -368,40 +370,158 @@
                     <button type="button" class="btn btn-outline-secondary" @onclick="CloseModal">
                         <i class="fas fa-times me-2"></i>Close
                     </button>
-                    <a href="/manage" class="btn btn-primary">
+                    <button type="button" class="btn btn-primary" @onclick="() => EditPassenger(selectedPassenger)">
                         <i class="fas fa-edit me-2"></i>Edit Passenger
-                    </a>
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 }
 
+@if (showModal)
+{
+    <div class="modal fade show d-block" tabindex="-1" role="dialog" style="z-index: 1050;">
+        <div class="modal-backdrop fade show" @onclick="CloseEditModal" style="z-index: 1040;"></div>
+        <div class="modal-dialog modal-lg" role="document" style="z-index: 1060;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-edit me-2"></i>
+                        Edit Passenger
+                    </h5>
+                    <button type="button" class="btn-close" @onclick="CloseEditModal" aria-label="Close"></button>
+                </div>
+                <EditForm Model="currentPassenger" OnValidSubmit="SavePassenger">
+                    <DataAnnotationsValidator />
+                    <div class="modal-body">
+                        <!-- === Personal Information === -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">First Name *</label>
+                                    <InputText @bind-Value="currentPassenger.FirstName" class="form-control" placeholder="Enter first name" />
+                                    <ValidationMessage For="@(() => currentPassenger.FirstName)" />
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Last Name *</label>
+                                    <InputText @bind-Value="currentPassenger.LastName" class="form-control" placeholder="Enter last name" />
+                                    <ValidationMessage For="@(() => currentPassenger.LastName)" />
+                                </div>
+                            </div>
+                        </div>
+                        <!-- === Optional Passenger Details === -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Nationality</label>
+                                    <InputText @bind-Value="currentPassenger.Nationality" class="form-control" placeholder="e.g., American" />
+                                    <ValidationMessage For="@(() => currentPassenger.Nationality)" />
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">PNR (Booking Reference)</label>
+                                    <InputText @bind-Value="currentPassenger.PNR" class="form-control" placeholder="e.g., R8T3Y1" />
+                                    <ValidationMessage For="@(() => currentPassenger.PNR)" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Passport Number</label>
+                                    <InputText @bind-Value="currentPassenger.PassportNumber" class="form-control" placeholder="Enter passport number" />
+                                    <ValidationMessage For="@(() => currentPassenger.PassportNumber)" />
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Mobile</label>
+                                    <InputText @bind-Value="currentPassenger.Mobile" class="form-control" placeholder="Enter mobile number" />
+                                    <ValidationMessage For="@(() => currentPassenger.Mobile)" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- === Blacklist Details === -->
+                        <div class="mb-3">
+                            <label class="form-label">Reason for Blacklisting *</label>
+                            <InputTextArea @bind-Value="currentPassenger.Reason" class="form-control" rows="3" placeholder="Enter detailed reason for blacklisting..." />
+                            <ValidationMessage For="@(() => currentPassenger.Reason)" />
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Start Date *</label>
+                                    <InputDate @bind-Value="currentPassenger.StartDate" class="form-control" />
+                                    <ValidationMessage For="@(() => currentPassenger.StartDate)" />
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">End Date *</label>
+                                    <InputDate @bind-Value="currentPassenger.EndDate" class="form-control" />
+                                    <ValidationMessage For="@(() => currentPassenger.EndDate)" />
+                                </div>
+                            </div>
+                        </div>
+                        @if (currentPassenger.EndDate < currentPassenger.StartDate)
+                        {
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                End date cannot be earlier than start date.
+                            </div>
+                        }
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" @onclick="CloseEditModal">
+                            <i class="fas fa-times me-2"></i>Cancel
+                        </button>
+                        <button type="submit" class="btn btn-primary" disabled="@(currentPassenger.EndDate < currentPassenger.StartDate)">
+                            <i class="fas fa-save me-2"></i>
+                            Update Passenger
+                        </button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+}
+
+
 @code {
     private List<BlackListPassenger> allPassengers = new();
     private List<BlackListPassenger> filteredPassengers = new();
     private List<BlackListPassenger> currentPagePassengers = new();
     private BlackListPassenger? selectedPassenger;
-    
+
     private string searchTerm = string.Empty;
     private string statusFilter = string.Empty;
     private string sortBy = "name";
-    
+
     // Statistics
     private int activeBansCount = 0;
     private int expiringSoonCount = 0;
     private int longTermCount = 0;
     private int totalPassengers = 0;
-    
+
     // Pagination
     private int currentPage = 1;
     private int pageSize = 10;
     private int totalPages => (int)Math.Ceiling((double)filteredPassengers.Count / pageSize);
-    
+
     // Status message
     private string statusMessage = string.Empty;
     private string statusClass = string.Empty;
     private string statusIcon = string.Empty;
+
+    // ADDED: State variables for the Edit Modal
+    private BlackListPassenger currentPassenger = new();
+    private bool showModal = false;
+    private bool isEditMode = false; // Always true when triggered from this page
 
     protected override async Task OnInitializedAsync()
     {
@@ -415,7 +535,7 @@
             allPassengers = await BlackListService.GetAllPassengersAsync();
             CalculateStatistics();
             FilterAndSortPassengers();
-            ShowStatusMessage("Passenger details loaded successfully!", "alert-success", "fa-check-circle");
+            //ShowStatusMessage("Passenger details loaded successfully!", "alert-success", "fa-check-circle");
         }
         catch (Exception ex)
         {
@@ -503,16 +623,65 @@
         selectedPassenger = null;
     }
 
+    private void EditPassenger(BlackListPassenger passenger)
+    {
+        // Create a copy to avoid modifying the original object in the list before saving
+        currentPassenger = new BlackListPassenger
+        {
+            Id = passenger.Id,
+            FirstName = passenger.FirstName,
+            LastName = passenger.LastName,
+            Nationality = passenger.Nationality,
+            PNR = passenger.PNR,
+            PassportNumber = passenger.PassportNumber,
+            Mobile = passenger.Mobile,
+            Reason = passenger.Reason,
+            StartDate = passenger.StartDate,
+            EndDate = passenger.EndDate,
+            CreatedDate = passenger.CreatedDate
+        };
+        isEditMode = true;
+        showModal = true;
+        selectedPassenger = null; // Close the view modal if it was open
+    }
+
+    private async Task SavePassenger()
+    {
+        try
+        {
+            // Since this page only edits, we only need the update logic.
+            // The shared modal form requires the check, which is fine.
+            if (isEditMode)
+            {
+                await BlackListService.UpdatePassengerAsync(currentPassenger);
+                ShowStatusMessage($"Passenger {currentPassenger.FullName} updated successfully!", "alert-success", "fa-check-circle");
+            }
+
+            await LoadPassengers(); // Reload all data to reflect changes
+            CloseEditModal();
+        }
+        catch (Exception ex)
+        {
+            ShowStatusMessage($"Error saving passenger: {ex.Message}", "alert-danger", "fa-exclamation-triangle");
+        }
+    }
+
+    private void CloseEditModal()
+    {
+        showModal = false;
+        currentPassenger = new();
+        isEditMode = false;
+    }
+
     private void ShowStatusMessage(string message, string cssClass, string icon)
     {
         statusMessage = message;
         statusClass = cssClass;
         statusIcon = icon;
 
-        // Auto-hide success messages after 3 seconds
         if (cssClass == "alert-success")
         {
-            _ = Task.Delay(3000).ContinueWith(_ =>
+            _ = Task.Delay(5000).ContinueWith(_ =>
             {
                 statusMessage = string.Empty;
                 InvokeAsync(StateHasChanged);
