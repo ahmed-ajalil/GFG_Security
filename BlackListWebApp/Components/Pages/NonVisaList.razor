@@ -295,7 +295,16 @@
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Airport Station *</label>
-                                <InputText @bind-Value="currentPassenger.AirportStation" class="form-control" />
+                                @* <InputText @bind-Value="currentPassenger.AirportStation" class="form-control" /> *@
+                                <InputSelect class="form-select" @bind-Value="currentPassenger.AirportStation">
+                                    <option value="">Select airport station...</option>
+                                    <option value="BAH Terminal 1">BAH Terminal 1</option>
+                                    <option value="BAH Terminal 2">BAH Terminal 2</option>
+                                    <option value="DXB Terminal 1">DXB Terminal 1</option>
+                                    <option value="DXB Terminal 3">DXB Terminal 3</option>
+                                    <option value="DOH Terminal 1">DOH Terminal 1</option>
+                                    <option value="KWI Terminal 1">KWI Terminal 1</option>
+                                </InputSelect>
                                 <ValidationMessage For="@(() => currentPassenger.AirportStation)" />
                             </div>
                             <div class="col-md-6 mb-3">
@@ -319,7 +328,18 @@
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Purpose of Entry</label>
-                                <InputTextArea @bind-Value="currentPassenger.Purpose" class="form-control" rows="2" />
+                                @* <InputTextArea @bind-Value="currentPassenger.Purpose" class="form-control" rows="2" /> *@
+                                <InputSelect class="form-select" @bind-Value="currentPassenger.Purpose">
+                                    <option value="">Select intended purpose...</option>
+                                    <option value="Business">Business</option>
+                                    <option value="Tourism">Tourism</option>
+                                    <option value="Transit">Transit</option>
+                                    <option value="Visit">Visit Family/Friends</option>
+                                    <option value="Medical">Medical Treatment</option>
+                                    <option value="Work">Work/Employment</option>
+                                    <option value="Study">Study/Education</option>
+                                    <option value="Other">Other</option>
+                                </InputSelect>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Remarks</label>
