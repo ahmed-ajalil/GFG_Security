@@ -1,4 +1,4 @@
-﻿using BlackListWebApp.Models;
+﻿using BlackListWebApp.Data.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace BlackListWebApp.Data

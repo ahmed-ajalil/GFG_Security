@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace BlackListWebApp.Models
+namespace BlackListWebApp.Data.Models
 {
     public class Fine
     {

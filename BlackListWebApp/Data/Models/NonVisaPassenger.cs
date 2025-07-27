@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace BlackListWebApp.Models
+namespace BlackListWebApp.Data.Models
 {
     public class NonVisaPassenger
     {

@@ -1,4 +1,4 @@
-﻿using BlackListWebApp.Models;
+﻿using BlackListWebApp.Data.Models;
 
 namespace BlackListWebApp.Interfaces
 {

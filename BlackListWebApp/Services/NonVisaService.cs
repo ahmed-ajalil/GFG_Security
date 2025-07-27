@@ -1,6 +1,6 @@
 ﻿using BlackListWebApp.Data;
+using BlackListWebApp.Data.Models;
 using BlackListWebApp.Interfaces;
-using BlackListWebApp.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace BlackListWebApp.Services
