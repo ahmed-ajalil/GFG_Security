@@ -16,7 +16,11 @@ namespace BlackListWebApp.Services
 
         public async Task<List<BlackListPassenger>?> GetAllPassengersAsync()
         {
-            var allPassengers = await _dbContext.BlackListPassengers.OrderByDescending(p => p.CreatedDate).ToListAsync();
+            var allPassengers = await _dbContext.BlackListPassengers
+                .Include(p => p.Detections)
+                    .ThenInclude(d => d.ItinerarySegments)
+                .OrderByDescending(p => p.CreatedDate)
+                .ToListAsync();
             return allPassengers;
         }
 
@@ -24,7 +28,11 @@ namespace BlackListWebApp.Services
         {
             try
             {
-                var passenger = await _dbContext.BlackListPassengers.Where(x => x.Id == id).FirstOrDefaultAsync();
+                var passenger = await _dbContext.BlackListPassengers
+                .Include(p => p.Detections)
+                    .ThenInclude(d => d.ItinerarySegments)
+                .FirstOrDefaultAsync(p => p.Id == id);
+
                 return passenger;
             }
             catch (Exception ex)
@@ -98,7 +106,10 @@ namespace BlackListWebApp.Services
 
         public async Task<bool> DeletePassengerAsync(int id)
         {
-            var passenger = await _dbContext.BlackListPassengers.FirstOrDefaultAsync(p => p.Id == id);
+            var passenger = await _dbContext.BlackListPassengers
+                .Include(p => p.Detections) // Important for cascading delete awareness
+                .FirstOrDefaultAsync(p => p.Id == id);
+
             if (passenger != null)
             {
                 _dbContext.BlackListPassengers.Remove(passenger);
@@ -119,15 +130,18 @@ namespace BlackListWebApp.Services
             var lowerCaseSearchTerm = searchTerm.ToLower();
 
             // IMPROVED: Enhanced search query
-            var query = _dbContext.BlackListPassengers.Where(p =>
-                p.FirstName.ToLower().Contains(lowerCaseSearchTerm) ||
-                p.LastName.ToLower().Contains(lowerCaseSearchTerm) ||
-                p.Reason.ToLower().Contains(lowerCaseSearchTerm) ||
-                (p.Nationality != null && p.Nationality.ToLower().Contains(lowerCaseSearchTerm)) ||
-                (p.PNR != null && p.PNR.ToLower().Contains(lowerCaseSearchTerm)) ||
-                (p.PassportNumber != null && p.PassportNumber.ToLower().Contains(lowerCaseSearchTerm)) ||
-                (p.Mobile != null && p.Mobile.ToLower().Contains(lowerCaseSearchTerm))
-            );
+            var query = _dbContext.BlackListPassengers
+                .Include(p => p.Detections)
+                .ThenInclude(d => d.ItinerarySegments)
+                .Where(p =>
+                    p.FirstName.ToLower().Contains(lowerCaseSearchTerm) ||
+                    p.LastName.ToLower().Contains(lowerCaseSearchTerm) ||
+                    p.Reason.ToLower().Contains(lowerCaseSearchTerm) ||
+                    (p.Nationality != null && p.Nationality.ToLower().Contains(lowerCaseSearchTerm)) ||
+                    (p.PNR != null && p.PNR.ToLower().Contains(lowerCaseSearchTerm)) ||
+                    (p.PassportNumber != null && p.PassportNumber.ToLower().Contains(lowerCaseSearchTerm)) ||
+                    (p.Mobile != null && p.Mobile.ToLower().Contains(lowerCaseSearchTerm))
+                );
 
             return await query.OrderByDescending(p => p.CreatedDate).ToListAsync(); // CHANGED: Use async version
 
@@ -157,6 +171,8 @@ namespace BlackListWebApp.Services
         {
             var weekAgoUtc = DateTime.UtcNow.AddDays(-7);
             return await _dbContext.BlackListPassengers
+                .Include(p => p.Detections)
+                    .ThenInclude(d => d.ItinerarySegments)
                 .Where(p => p.CreatedDate >= weekAgoUtc)
                 .OrderByDescending(p => p.CreatedDate)
                 .ToListAsync();
