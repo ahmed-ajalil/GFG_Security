@@ -86,7 +86,7 @@
                             <tbody>
                                 @foreach (var passenger in currentPagePassengers)
                                 {
-                                    <tr>
+                                    <tr class="@(passenger.Detected ? "table-warning" : "")">
                                         <td>
                                             <div class="d-flex align-items-center">
                                                 <div class="avatar-sm me-3">
@@ -95,8 +95,27 @@
                                                     </div>
                                                 </div>
                                                 <div>
-                                                    <h6 class="mb-0 fw-semibold">@passenger.FullName</h6>
+                                                    @if (passenger.Detected)
+                                                    {
+                                                        <span class="badge bg-danger">
+                                                            <i class="fas fa-exclamation-triangle me-1"></i>@passenger.FullName
+                                                        </span>
+                                                        <br />
+                                                    }
+                                                    else
+                                                    {
+                                                        <h6 class="mb-0 fw-semibold">@passenger.FullName</h6>
+                                                    }
+
                                                     <small class="text-muted">ID: #@passenger.Id</small>
+                                                    @* @if (passenger.Detected)
+                                                    {
+                                                        <br />
+                                                        <span class="badge bg-danger mt-1">
+                                                            <i class="fas fa-exclamation-triangle me-1"></i>
+                                                            Flight Detected
+                                                        </span>
+                                                    } *@
                                                 </div>
                                             </div>
                                         </td>
@@ -123,7 +142,7 @@
                                         </td>
                                         <td>
                                             <div class="btn-group" role="group">
-                                                <button class="btn btn-sm btn-ghost" @onclick="() => ViewPassenger(passenger)" title="View Details">
+                                                <button class="btn btn-sm btn-outline-secondary" @onclick="() => ViewPassenger(passenger)" title="View Details">
                                                     <i class="fas fa-eye"></i>
                                                 </button>
                                                 <button class="btn btn-sm btn-outline-secondary" @onclick="() => EditPassenger(passenger)" title="Edit">
@@ -414,6 +433,47 @@
                             <i class="fas fa-check me-2"></i>
                             This ban has <strong>expired</strong>
                         </div>
+                    }
+
+                    @if (selectedPassenger.Detections.Any())
+                    {
+                        <hr />
+                        <h6 class="text-danger fw-bold mt-4 mb-3">
+                            <i class="fas fa-plane-departure me-2"></i>Flight Detection History
+                        </h6>
+
+                        @foreach (var detection in selectedPassenger.Detections.OrderByDescending(d => d.DetectionTimestamp))
+                        {
+                            <div class="card bg-light mb-3">
+                                <div class="card-header d-flex justify-content-between">
+                                    <span><strong>PNR:</strong> <span class="badge bg-secondary">@detection.Pnr</span></span>
+                                    <small class="text-muted">Detected On: @detection.DetectionTimestamp.ToString("MMM dd, yyyy HH:mm") UTC</small>
+                                </div>
+                                <div class="card-body">
+                                    <h5 class="card-title">Itinerary</h5>
+                                    <ul class="list-group">
+                                        @foreach (var segment in detection.ItinerarySegments.OrderBy(s => s.DepartureDateTime))
+                                        {
+                                            <li class="list-group-item">
+                                                <div class="d-flex w-100 justify-content-between">
+                                                    <div>
+                                                        <i class="fas fa-plane-up me-2 text-primary"></i>
+                                                        <strong>@segment.DepartureAirportCode</strong>
+                                                        <span class="text-muted mx-2"><i class="fa fa-arrow-right" aria-hidden="true"></i></span>
+                                                        <strong>@segment.ArrivalAirportCode</strong>
+                                                    </div>
+                                                    <small class="badge bg-info">@segment.FullFlightNumber</small>
+                                                </div>
+                                                <small class="d-block mt-1">
+                                                    Departs: @segment.DepartureDateTime.ToString("MMM dd, yyyy HH:mm") |
+                                                    Arrives: @segment.ArrivalDateTime.ToString("MMM dd, yyyy HH:mm")
+                                                </small>
+                                            </li>
+                                        }
+                                    </ul>
+                                </div>
+                            </div>
+                        }
                     }
                 </div>
                 <div class="modal-footer">
