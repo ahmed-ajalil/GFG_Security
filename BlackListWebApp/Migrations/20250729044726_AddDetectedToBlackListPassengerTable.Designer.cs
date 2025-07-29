@@ -3,6 +3,7 @@ using System;
 using BlackListWebApp.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace BlackListWebApp.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250729044726_AddDetectedToBlackListPassengerTable")]
+    partial class AddDetectedToBlackListPassengerTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -79,34 +82,6 @@ namespace BlackListWebApp.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("BlackListPassengers");
-                });
-
-            modelBuilder.Entity("BlackListWebApp.Data.Models.DetectionLog", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("BlackListPassengerId")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("DetectionTimestamp")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Pnr")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<DateTime>("UpdateTimestamp")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("BlackListPassengerId");
-
-                    b.ToTable("DetectionLogs");
                 });
 
             modelBuilder.Entity("BlackListWebApp.Data.Models.Fine", b =>
@@ -175,55 +150,6 @@ namespace BlackListWebApp.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Fines");
-                });
-
-            modelBuilder.Entity("BlackListWebApp.Data.Models.FlightSegment", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("ArrivalAirportCode")
-                        .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("character varying(10)");
-
-                    b.Property<DateTime>("ArrivalDateTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("DepartureAirportCode")
-                        .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("character varying(10)");
-
-                    b.Property<DateTime>("DepartureDateTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("DetectionLogId")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("MarketingAirline")
-                        .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("character varying(10)");
-
-                    b.Property<string>("MarketingFlightNumber")
-                        .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("character varying(10)");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("character varying(10)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("DetectionLogId");
-
-                    b.ToTable("FlightSegments");
                 });
 
             modelBuilder.Entity("BlackListWebApp.Data.Models.INADReason", b =>
@@ -314,38 +240,6 @@ namespace BlackListWebApp.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("NonVisaPassengers");
-                });
-
-            modelBuilder.Entity("BlackListWebApp.Data.Models.DetectionLog", b =>
-                {
-                    b.HasOne("BlackListWebApp.Data.Models.BlackListPassenger", "BlackListPassenger")
-                        .WithMany("Detections")
-                        .HasForeignKey("BlackListPassengerId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("BlackListPassenger");
-                });
-
-            modelBuilder.Entity("BlackListWebApp.Data.Models.FlightSegment", b =>
-                {
-                    b.HasOne("BlackListWebApp.Data.Models.DetectionLog", "DetectionLog")
-                        .WithMany("ItinerarySegments")
-                        .HasForeignKey("DetectionLogId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("DetectionLog");
-                });
-
-            modelBuilder.Entity("BlackListWebApp.Data.Models.BlackListPassenger", b =>
-                {
-                    b.Navigation("Detections");
-                });
-
-            modelBuilder.Entity("BlackListWebApp.Data.Models.DetectionLog", b =>
-                {
-                    b.Navigation("ItinerarySegments");
                 });
 #pragma warning restore 612, 618
         }

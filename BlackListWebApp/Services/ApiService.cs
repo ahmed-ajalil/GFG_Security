@@ -42,8 +42,7 @@ namespace BlackListWebApp.Services
                 // Log the exception or handle it as needed
                 Console.WriteLine($"An error occurred: {ex.Message}");
                 return null;
-            }
-            
+            }  
         }
     }
 }

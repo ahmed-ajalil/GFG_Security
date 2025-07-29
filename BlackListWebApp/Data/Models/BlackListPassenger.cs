@@ -40,11 +40,14 @@ namespace BlackListWebApp.Data.Models
         [Required]
         public DateTime CreatedDate { get; set; } = DateTime.Now;
         public DateTime? UpdatedDate { get; set; }
+        public bool Detected { get; set; } = false;
 
         public string FullName => $"{FirstName} {LastName}";
         public bool IsActive => DateTime.UtcNow.Date >= StartDate.Date && DateTime.UtcNow.Date <= EndDate.Date;
         public string Status => IsActive ? "Active" : "Inactive";
         public int DaysRemaining => EndDate.Date > DateTime.UtcNow.Date ? (EndDate.Date - DateTime.UtcNow.Date).Days : 0;
+        // Add this property to your existing BlackListPassenger class
+        public ICollection<DetectionLog> Detections { get; set; } = new List<DetectionLog>();
     }
 }
     

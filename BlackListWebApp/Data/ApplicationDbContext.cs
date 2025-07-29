@@ -13,5 +13,7 @@ namespace BlackListWebApp.Data
         public DbSet<NonVisaPassenger> NonVisaPassengers { get; set; }
         public DbSet<INADReason> INADReasons { get; set; }
         public DbSet<Fine> Fines { get; set; }
+        public DbSet<DetectionLog> DetectionLogs { get; set; }
+        public DbSet<FlightSegment> FlightSegments { get; set; }
     }
 }
