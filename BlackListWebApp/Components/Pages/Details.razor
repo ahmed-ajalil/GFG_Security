@@ -1,8 +1,13 @@
 @page "/details"
+@attribute [Authorize(Policy = "AllUsers")]
 @using BlackListWebApp.Data.Models
 @using BlackListWebApp.Interfaces
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
 @inject IBlackListService BlackListService
 @rendermode InteractiveServer
+@inject IAuthorizationService AuthorizationService
+@inject AuthenticationStateProvider AuthenticationStateProvider
 
 <PageTitle>BlackList Details - BlackList Management</PageTitle>
 
@@ -18,12 +23,16 @@
                     </h1>
                     <p class="page-subtitle">Detailed information about blacklisted passengers</p>
                 </div>
-                <div>
-                    <a href="/manage" class="btn btn-primary">
-                        <i class="fas fa-cog me-2"></i>
-                        Manage BlackList
-                    </a>
-                </div>
+                @if (isAdmin)
+                {
+                    <div class="@(isAdmin ? "" : "d-none")">
+                        <a href="/manage" class="btn btn-primary">
+                            <i class="fas fa-cog me-2"></i>
+                            Manage BlackList
+                        </a>
+                    </div>
+                }
+
             </div>
         </div>
 
@@ -115,7 +124,7 @@
                     <div class="col-md-4">
                         <div class="search-container">
                             <i class="fas fa-search search-icon"></i>
-                            <input type="text" class="form-control" placeholder="Search passengers..." 
+                            <input type="text" class="form-control" placeholder="Search passengers..."
                                    @bind="searchTerm" @oninput="OnSearchChanged" />
                         </div>
                     </div>
@@ -191,11 +200,11 @@
                                             </div>
                                         </td>
                                         <td>
-                                            <span class="fw-medium">@passenger.StartDate.ToString("MMM dd, yyyy")</span><br/>
+                                            <span class="fw-medium">@passenger.StartDate.ToString("MMM dd, yyyy")</span><br />
                                             <small class="text-muted">@passenger.StartDate.ToString("dddd")</small>
                                         </td>
                                         <td>
-                                            <span class="fw-medium">@passenger.EndDate.ToString("MMM dd, yyyy")</span><br/>
+                                            <span class="fw-medium">@passenger.EndDate.ToString("MMM dd, yyyy")</span><br />
                                             <small class="text-muted">@passenger.EndDate.ToString("dddd")</small>
                                         </td>
                                         <td>
@@ -223,16 +232,20 @@
                                         </td>
                                         <td class="text-center">
                                             <div class="btn-group" role="group">
-                                                <button type="button" class="btn btn-outline-info btn-sm" 
+                                                <button type="button" class="btn btn-outline-info btn-sm"
                                                         @onclick="() => ViewPassengerDetails(passenger)"
                                                         title="View Details">
                                                     <i class="fas fa-eye"></i>
                                                 </button>
-                                                <button type="button" class="btn btn-outline-secondary btn-sm"
-                                                        @onclick="() => EditPassenger(passenger)"
-                                                        title="Edit">
-                                                    <i class="fas fa-edit"></i>
-                                                </button>
+                                                @if (isAdmin)
+                                                {
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm @(isAdmin ? "" : "d-none")"
+                                                            @onclick="() => EditPassenger(passenger)"
+                                                            title="Edit">
+                                                        <i class="fas fa-edit"></i>
+                                                    </button>
+                                                }
+
                                             </div>
                                         </td>
                                     </tr>
@@ -247,7 +260,7 @@
                         <div class="card-footer">
                             <div class="d-flex justify-content-between align-items-center">
                                 <div class="text-muted">
-                                    Showing @((currentPage - 1) * pageSize + 1) to @Math.Min(currentPage * pageSize, filteredPassengers.Count) 
+                                    Showing @((currentPage - 1) * pageSize + 1) to @Math.Min(currentPage * pageSize, filteredPassengers.Count)
                                     of @filteredPassengers.Count entries
                                 </div>
                                 <nav aria-label="Page navigation">
@@ -262,7 +275,7 @@
                                                 <i class="fas fa-angle-left"></i>
                                             </button>
                                         </li>
-                                        
+
                                         @for (int i = Math.Max(1, currentPage - 2); i <= Math.Min(totalPages, currentPage + 2); i++)
                                         {
                                             int pageNumber = i;
@@ -272,7 +285,7 @@
                                                 </button>
                                             </li>
                                         }
-                                        
+
                                         <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
                                             <button class="page-link" @onclick="() => GoToPage(currentPage + 1)" disabled="@(currentPage == totalPages)">
                                                 <i class="fas fa-angle-right"></i>
@@ -422,9 +435,12 @@
                     <button type="button" class="btn btn-outline-secondary" @onclick="CloseModal">
                         <i class="fas fa-times me-2"></i>Close
                     </button>
-                    <button type="button" class="btn btn-primary" @onclick="() => EditPassenger(selectedPassenger)">
-                        <i class="fas fa-edit me-2"></i>Edit Passenger
-                    </button>
+                    @if (isAdmin)
+                    {
+                        <button type="button" class="btn btn-primary @(isAdmin ? "" : "d-none")" @onclick="() => EditPassenger(selectedPassenger)">
+                            <i class="fas fa-edit me-2"></i>Edit Passenger
+                        </button>
+                    }
                 </div>
             </div>
         </div>
@@ -575,9 +591,20 @@
     private bool showModal = false;
     private bool isEditMode = false; // Always true when triggered from this page
 
+    private bool isAdmin = false;
+
     protected override async Task OnInitializedAsync()
     {
         await LoadPassengers();
+        await CheckAdminRole();
+    }
+
+    private async Task CheckAdminRole()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        var adminsOnlyResult = await AuthorizationService.AuthorizeAsync(user, "AdminsOnly");
+        isAdmin = adminsOnlyResult.Succeeded;
     }
 
     private async Task LoadPassengers()
@@ -611,8 +638,8 @@
         if (!string.IsNullOrWhiteSpace(searchTerm))
         {
             var searchLower = searchTerm.ToLower();
-            filtered = filtered.Where(p => 
-                p.FirstName.ToLower().Contains(searchLower) || 
+            filtered = filtered.Where(p =>
+                p.FirstName.ToLower().Contains(searchLower) ||
                 p.LastName.ToLower().Contains(searchLower) ||
                 p.Reason.ToLower().Contains(searchLower));
         }

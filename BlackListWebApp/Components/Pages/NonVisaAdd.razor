@@ -1,7 +1,9 @@
 @page "/non-visa/add"
+@attribute [Authorize(Policy = "AdminsOnly")]
 @rendermode InteractiveServer
 @using BlackListWebApp.Data.Models
 @using BlackListWebApp.Interfaces
+@using Microsoft.AspNetCore.Authorization
 @inject INonVisaService NonVisaService
 @inject NavigationManager NavigationManager
 

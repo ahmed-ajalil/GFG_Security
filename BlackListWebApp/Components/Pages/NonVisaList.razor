@@ -1,9 +1,14 @@
 @page "/non-visa/list"
+@attribute [Authorize(Policy = "AllUsers")]
 @rendermode InteractiveServer
 @implements IDisposable
 @using BlackListWebApp.Data.Models
 @using BlackListWebApp.Interfaces
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
 @inject INonVisaService NonVisaService
+@inject IAuthorizationService AuthorizationService
+@inject AuthenticationStateProvider AuthenticationStateProvider
 
 <PageTitle>Visa Violations Registry - BlackList Management</PageTitle>
 
@@ -17,7 +22,10 @@
                     <p class="page-subtitle">Track and manage passengers who violated visa requirements</p>
                 </div>
                 @* <button @onclick="ShowAddModal" class="btn btn-danger"><i class="fas fa-plus me-2"></i>Record New Violation</button> *@
-                <a href="/non-visa/add" class="btn btn-danger"><i class="fas fa-plus me-2"></i>Record New Violation</a>
+                @if (isAdmin)
+                {
+                    <a href="/non-visa/add" class="btn btn-danger"><i class="fas fa-plus me-2"></i>Record New Violation</a>
+                }
             </div>
         </div>
 
@@ -180,8 +188,12 @@
                                         <td>
                                             <div class="btn-group" role="group">
                                                 <button class="btn btn-sm btn-ghost" @onclick="() => ViewPassenger(passenger)" title="View Details"><i class="fas fa-eye"></i></button>
-                                                <button class="btn btn-sm btn-outline-secondary" @onclick="() => EditPassenger(passenger)" title="Edit"><i class="fas fa-edit"></i></button>
-                                                <button class="btn btn-sm btn-outline-danger" @onclick="() => ShowDeleteConfirmation(passenger)" title="Delete"><i class="fas fa-trash"></i></button>
+                                                @if (isAdmin)
+                                                {
+                                                    <button class="btn btn-sm btn-outline-secondary" @onclick="() => EditPassenger(passenger)" title="Edit"><i class="fas fa-edit"></i></button>
+                                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => ShowDeleteConfirmation(passenger)" title="Delete"><i class="fas fa-trash"></i></button>
+                                                }
+
                                             </div>
                                         </td>
                                     </tr>
@@ -232,7 +244,10 @@
                             <i class="fas fa-plus me-2"></i>
                             Record New Violation
                         </button> *@
-                        <a href="/non-visa/add" class="btn btn-danger"><i class="fas fa-plus me-2"></i>Record New Violation</a>
+                        @if (isAdmin)
+                        {
+                            <a href="/non-visa/add" class="btn btn-danger"><i class="fas fa-plus me-2"></i>Record New Violation</a>
+                        }
                     </div>
                 }
             </div>
@@ -405,9 +420,13 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" @onclick="CloseViewModal">Close</button>
-                    <button type="button" class="btn btn-primary" @onclick="() => EditPassenger(selectedPassenger)">
-                        <i class="fas fa-edit me-2"></i>Edit
-                    </button>
+                    @if (isAdmin)
+                    {
+                        <button type="button" class="btn btn-primary" @onclick="() => EditPassenger(selectedPassenger)">
+                            <i class="fas fa-edit me-2"></i>Edit
+                        </button>
+                    }
+
                 </div>
             </div>
         </div>
@@ -468,12 +487,21 @@
     private int pageSize = 10;
     private int totalPages => (int)Math.Ceiling((double)filteredPassengers.Count / pageSize);
 
+    private bool isAdmin = false;
+
     protected override async Task OnInitializedAsync()
     {
         await LoadData();
         await CalculateStatistics(); // Calculate once on load
+        await CheckAdminRole();
     }
-
+    private async Task CheckAdminRole()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        var adminsOnlyResult = await AuthorizationService.AuthorizeAsync(user, "AdminsOnly");
+        isAdmin = adminsOnlyResult.Succeeded;
+    }
     private async Task LoadData()
     {
         isLoading = true;
@@ -509,7 +537,7 @@
 
     // --- Event Handlers for Filtering ---
     private async Task OnSearchChanged(ChangeEventArgs e)
-{
+    {
         searchTerm = e.Value?.ToString() ?? string.Empty;
 
         // Cancel any previously scheduled search
@@ -545,7 +573,7 @@
     // --- Modal Control ---
     private void ShowAddModal()
     {
-        currentPassenger = new NonVisaPassenger { ArrivalDate = DateTime.UtcNow.Date, Status = "Pending"};
+        currentPassenger = new NonVisaPassenger { ArrivalDate = DateTime.UtcNow.Date, Status = "Pending" };
         isEditMode = false;
         showAddEditModal = true;
     }

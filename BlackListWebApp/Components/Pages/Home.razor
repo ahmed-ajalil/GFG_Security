@@ -3,8 +3,11 @@
 @using BlackListWebApp.Data.Models
 @using BlackListWebApp.Interfaces
 @using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
 @inject IBlackListService BlackListService
 @rendermode InteractiveServer
+@inject IAuthorizationService AuthorizationService
+@inject AuthenticationStateProvider AuthenticationStateProvider
 
 <PageTitle>Dashboard - BlackList Management</PageTitle>
 
@@ -169,12 +172,15 @@
                             </div>
                         }
                     </div>
-                    <div class="card-footer">
-                        <a href="/manage" class="btn btn-primary">
-                            <i class="fas fa-cog me-2"></i>
-                            Manage BlackList
-                        </a>
-                    </div>
+                    @if (isAdmin)
+                    {
+                        <div class="card-footer @(isAdmin ? "" : "d-none")">
+                            <a href="/manage" class="btn btn-primary">
+                                <i class="fas fa-cog me-2"></i>
+                                Manage BlackList
+                            </a>
+                        </div>
+                    }
                 </div>
             </div>
 
@@ -299,9 +305,12 @@
                     <button type="button" class="btn btn-outline-secondary" @onclick="CloseModal">
                         <i class="fas fa-times me-2"></i>Close
                     </button>
-                    <a href="/manage" class="btn btn-primary">
-                        <i class="fas fa-edit me-2"></i>Manage BlackList
-                    </a>
+                    @if (isAdmin)
+                    {
+                        <a href="/manage" class="btn btn-primary @(isAdmin ? "" : "d-none")">
+                            <i class="fas fa-edit me-2"></i>Manage BlackList
+                        </a>
+                    }
                 </div>
             </div>
         </div>
@@ -320,9 +329,20 @@
     private string statusClass = string.Empty;
     private string statusIcon = string.Empty;
 
+    private bool isAdmin = false;
+
     protected override async Task OnInitializedAsync()
     {
         await LoadDashboardData();
+        await CheckAdminRole();
+    }
+
+    private async Task CheckAdminRole()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        var adminsOnlyResult = await AuthorizationService.AuthorizeAsync(user, "AdminsOnly");
+        isAdmin = adminsOnlyResult.Succeeded;
     }
 
     private async Task LoadDashboardData()

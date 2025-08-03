@@ -28,7 +28,7 @@
                     </li>
                     
                     <!-- Black List Dropdown -->
-                    <AuthorizeView Policy="AdminsOnly">
+                    <AuthorizeView Policy="AllUsers">
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" id="blacklistDropdown" role="button"
                                data-bs-toggle="dropdown" aria-expanded="false">
@@ -37,7 +37,7 @@
                             </a>
                             <ul class="dropdown-menu" aria-labelledby="blacklistDropdown">
                                 <li>
-                                    <a class="dropdown-item" href="/manage">
+                                    <a class="dropdown-item @(isAdmin ? "" : "d-none")" href="/manage">
                                         <i class="fas fa-users-cog me-2"></i>
                                         Manage Blacklist
                                     </a>
@@ -61,7 +61,7 @@
                             Non-Visa
                         </a>
                         <ul class="dropdown-menu" aria-labelledby="nonVisaDropdown">
-                            <li>
+                            <li class="@(isAdmin ? "" : "d-none")">
                                 <a class="dropdown-item" href="/non-visa/add">
                                     <i class="fas fa-user-plus me-2"></i>
                                     Add Passengers
@@ -122,6 +122,7 @@
 @code {
     private bool canManageBlacklist = false;
     private bool canViewReports = false;
+    private bool isAdmin = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -143,5 +144,13 @@
         {
             canViewReports = true;
         }
+    }
+
+    private async Task CheckAdminRole()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        var adminsOnlyResult = await AuthorizationService.AuthorizeAsync(user, "AdminsOnly");
+        isAdmin = adminsOnlyResult.Succeeded;
     }
 }
