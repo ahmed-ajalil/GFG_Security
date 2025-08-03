@@ -2,13 +2,16 @@ using BlackListWebApp.Components;
 using BlackListWebApp.Data;
 using BlackListWebApp.Interfaces;
 using BlackListWebApp.Services;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Identity.Web;
+using Microsoft.Identity.Web.UI;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
-    .AddInteractiveServerComponents();
+    .AddInteractiveServerComponents(); // End this statement with a semicolon
 
 builder.Services.AddHostedService<BackgroundWorkerService>();
 
@@ -16,6 +19,35 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(connectionString)
 );
+
+builder.Services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
+    .AddMicrosoftIdentityWebApp(builder.Configuration.GetSection("AzureAd"));
+
+builder.Services.AddRazorPages()
+    .AddMicrosoftIdentityUI();
+
+builder.Services.AddAuthorization(options =>
+{
+    // Policy for users in the "Administrators" group
+    options.AddPolicy("AdminsOnly", policy =>
+        policy.RequireClaim("groups", "95ffecdc-ecb1-4e1b-a4c3-17d1a5153d5c"));
+
+    // Policy for users in the "Managers" group
+    options.AddPolicy("UserRole", policy =>
+        policy.RequireClaim("groups", "714b5a8d-b284-4905-8537-e3977c04bdb2"));
+
+    // Policy for users in the "Managers" group
+    options.AddPolicy("DevelopersOnly", policy =>
+        policy.RequireClaim("groups", "2a438112-4dcf-493e-8e64-fd94ac34ddf8"));
+
+    // You can also require membership in one of several groups
+    options.AddPolicy("AllUsers", policy =>
+        policy.RequireClaim("groups",
+            "95ffecdc-ecb1-4e1b-a4c3-17d1a5153d5c",
+            "714b5a8d-b284-4905-8537-e3977c04bdb2",
+            "2a438112-4dcf-493e-8e64-fd94ac34ddf8"
+        ));
+});
 
 // Register application services
 builder.Services.AddScoped<IBlackListService, BlackListService>();
@@ -50,6 +82,10 @@ app.UseHttpsRedirection();
 
 app.UseStaticFiles();
 app.UseAntiforgery();
+
+// ADD THESE TWO LINES
+app.MapRazorPages();
+app.MapControllers();
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();

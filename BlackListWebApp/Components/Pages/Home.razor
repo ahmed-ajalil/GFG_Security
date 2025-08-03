@@ -1,6 +1,8 @@
 @page "/"
+@attribute [Authorize(Policy = "AllUsers")]
 @using BlackListWebApp.Data.Models
 @using BlackListWebApp.Interfaces
+@using Microsoft.AspNetCore.Authorization
 @inject IBlackListService BlackListService
 @rendermode InteractiveServer
 

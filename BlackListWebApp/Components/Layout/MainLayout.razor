@@ -1,4 +1,8 @@
-﻿@inherits LayoutComponentBase
+﻿@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@inherits LayoutComponentBase
+@inject IAuthorizationService AuthorizationService
+@inject AuthenticationStateProvider AuthenticationStateProvider
 
 <div class="main-container">
     <!-- Navigation -->
@@ -24,27 +28,30 @@
                     </li>
                     
                     <!-- Black List Dropdown -->
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="blacklistDropdown" role="button" 
-                           data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="fas fa-user-slash me-1"></i>
-                            Black List
-                        </a>
-                        <ul class="dropdown-menu" aria-labelledby="blacklistDropdown">
-                            <li>
-                                <a class="dropdown-item" href="/manage">
-                                    <i class="fas fa-users-cog me-2"></i>
-                                    Manage Blacklist
-                                </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item" href="/details">
-                                    <i class="fas fa-info-circle me-2"></i>
-                                    Blacklist Details
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
+                    <AuthorizeView Policy="AdminsOnly">
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="blacklistDropdown" role="button"
+                               data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-user-slash me-1"></i>
+                                Black List
+                            </a>
+                            <ul class="dropdown-menu" aria-labelledby="blacklistDropdown">
+                                <li>
+                                    <a class="dropdown-item" href="/manage">
+                                        <i class="fas fa-users-cog me-2"></i>
+                                        Manage Blacklist
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="/details">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        Blacklist Details
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                    </AuthorizeView>
+                    
                     
                     <!-- Non-Visa Dropdown -->
                     <li class="nav-item dropdown">
@@ -69,6 +76,15 @@
                         </ul>
                     </li>
                 </ul>
+                <AuthorizeView>
+                    <Authorized>
+                        <div class="nav-item px-3">
+                            <NavLink class="nav-link" href="MicrosoftIdentity/Account/SignOut">
+                                <span class="bi bi-box-arrow-right-nav-menu" aria-hidden="true"></span> Sign Out
+                            </NavLink>
+                        </div>
+                    </Authorized>
+                </AuthorizeView>
             </div>
         </div>
     </nav>
@@ -102,3 +118,30 @@
         <i class="fas fa-times"></i>
     </a>
 </div>
+
+@code {
+    private bool canManageBlacklist = false;
+    private bool canViewReports = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Get the current user
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        // Check if the user satisfies the "AdminsOnly" policy
+        var adminsOnlyResult = await AuthorizationService.AuthorizeAsync(user, "AdminsOnly");
+        if (adminsOnlyResult.Succeeded)
+        {
+            canManageBlacklist = true;
+        }
+
+        // Check if the user satisfies the "CanViewReports" policy
+        // (Assuming you have this policy defined)
+        var reportsResult = await AuthorizationService.AuthorizeAsync(user, "DevelopersOnly");
+        if (reportsResult.Succeeded)
+        {
+            canViewReports = true;
+        }
+    }
+}
