@@ -114,11 +114,13 @@ public class BackgroundWorkerService : BackgroundService
                             await dbContext.SaveChangesAsync(stoppingToken);
                             _logger.LogInformation("Successfully saved detection log for PNR {PassengerFullName}.", passenger.FullName);
 
+                            // Send the email notification
                             _logger.LogInformation("Condition met. Attempting to send email.");
                             await _emailService.SendEmailAsync(
                                 toEmail: "sayedali.maki@gulfairgroup.bh",
                                 subject: "Automated Report from Background Service",
-                                bodyContent: $"<p>This email was sent automatically at {DateTime.UtcNow:F}.</p>"
+                                fullName: passenger.FullName,
+                                dateTime: newDetection.DetectionTimestamp
                             );
                         }
                     }

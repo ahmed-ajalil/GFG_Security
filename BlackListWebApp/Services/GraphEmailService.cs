@@ -36,10 +36,24 @@ namespace BlackListWebApp.Services
             _graphClient = new GraphServiceClient(authProvider);
         }
 
-        public async Task SendEmailAsync(string toEmail, string subject, string bodyContent)
+        public async Task<string> GetBlacklistDetectionTemplate()
+        {
+            string path = Path.Combine(Environment.CurrentDirectory, @"EmailTemplates", "BlacklistDetectionBody.html");
+            string templatePath = await File.ReadAllTextAsync(path);
+            return templatePath;
+        }
+
+        public async Task SendEmailAsync(string toEmail, string subject, string fullName, DateTime dateTime)
         {
             try
             {
+                // Read the entire HTML template
+                string emailBody = await GetBlacklistDetectionTemplate();
+                // Replace placeholders with actual values
+                emailBody = emailBody.Replace("#fullname", fullName)
+                                    .Replace("#timestamp", dateTime.ToString("MMMM dd, yyyy"))
+                                    .Replace("#current_year", DateTime.Now.Year.ToString());
+
                 var fromAddress = _configuration["Mailbox:Address"];
 
                 var message = new Message
@@ -48,7 +62,7 @@ namespace BlackListWebApp.Services
                     Body = new ItemBody
                     {
                         ContentType = BodyType.Html,
-                        Content = bodyContent
+                        Content = emailBody
                     },
                     ToRecipients = new List<Recipient>
                     {
