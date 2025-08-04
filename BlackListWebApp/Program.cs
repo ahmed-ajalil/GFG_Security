@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Web;
 using Microsoft.Identity.Web.UI;
+using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -67,6 +68,17 @@ builder.Services.AddHttpClient<ApiService>(client =>
     var cookieValue = "ARRAffinity=e0626f5e6852f4855a5f56304569fa400f626eb82af185ca565647512c020dc9; ARRAffinitySameSite=e0626f5e6852f4855a5f56304569fa400f626eb82af185ca565647512c020dc9";
     client.DefaultRequestHeaders.Add("Cookie", cookieValue);
 });
+
+// 1. Load configuration (same as before)
+var assembly = Assembly.GetExecutingAssembly();
+using var stream = assembly.GetManifestResourceStream("BlackListWebApp.appsettings.json"); // <-- IMPORTANT: Replace YourProjectName
+var config = new ConfigurationBuilder()
+            .AddJsonStream(stream)
+            .Build();
+builder.Configuration.AddConfiguration(config);
+
+// 2. Register the GraphEmailService
+builder.Services.AddSingleton<GraphEmailService>();
 
 var app = builder.Build();
 

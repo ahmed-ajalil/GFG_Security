@@ -8,12 +8,14 @@ public class BackgroundWorkerService : BackgroundService
 {
     private readonly ILogger<BackgroundWorkerService> _logger;
     private readonly IServiceProvider _serviceProvider; // Inject the IServiceProvider
+    private readonly GraphEmailService _emailService;
 
     // Modified constructor: Only inject ILogger and IServiceProvider
-    public BackgroundWorkerService(ILogger<BackgroundWorkerService> logger, IServiceProvider serviceProvider)
+    public BackgroundWorkerService(ILogger<BackgroundWorkerService> logger, IServiceProvider serviceProvider, GraphEmailService emailService)
     {
         _logger = logger;
         _serviceProvider = serviceProvider;
+        _emailService = emailService;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -111,6 +113,13 @@ public class BackgroundWorkerService : BackgroundService
                             // Save all changes for this detection
                             await dbContext.SaveChangesAsync(stoppingToken);
                             _logger.LogInformation("Successfully saved detection log for PNR {PassengerFullName}.", passenger.FullName);
+
+                            _logger.LogInformation("Condition met. Attempting to send email.");
+                            await _emailService.SendEmailAsync(
+                                toEmail: "sayedali.maki@gulfairgroup.bh",
+                                subject: "Automated Report from Background Service",
+                                bodyContent: $"<p>This email was sent automatically at {DateTime.UtcNow:F}.</p>"
+                            );
                         }
                     }
                 }
