@@ -144,6 +144,7 @@
         {
             canViewReports = true;
         }
+        await CheckAdminRole();
     }
 
     private async Task CheckAdminRole()
@@ -151,6 +152,7 @@
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
         var adminsOnlyResult = await AuthorizationService.AuthorizeAsync(user, "AdminsOnly");
-        isAdmin = adminsOnlyResult.Succeeded;
+        var developersOnlyResult = await AuthorizationService.AuthorizeAsync(user, "DevelopersOnly");
+        isAdmin = adminsOnlyResult.Succeeded || developersOnlyResult.Succeeded;
     }
 }

@@ -31,7 +31,7 @@ builder.Services.AddAuthorization(options =>
 {
     // Policy for users in the "Administrators" group
     options.AddPolicy("AdminsOnly", policy =>
-        policy.RequireClaim("groups", "95ffecdc-ecb1-4e1b-a4c3-17d1a5153d5c"));
+        policy.RequireClaim("groups", "95ffecdc-ecb1-4e1b-a4c3-17d1a5153d5c", "2a438112-4dcf-493e-8e64-fd94ac34ddf8"));
 
     // Policy for users in the "Managers" group
     options.AddPolicy("UserRole", policy =>

@@ -342,7 +342,8 @@
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
         var adminsOnlyResult = await AuthorizationService.AuthorizeAsync(user, "AdminsOnly");
-        isAdmin = adminsOnlyResult.Succeeded;
+        var developersOnlyResult = await AuthorizationService.AuthorizeAsync(user, "DevelopersOnly");
+        isAdmin = adminsOnlyResult.Succeeded || developersOnlyResult.Succeeded;
     }
 
     private async Task LoadDashboardData()
@@ -357,7 +358,7 @@
             activeCount = allPassengers.Count(p => p.IsActive);
             totalCount = allPassengers.Count;
 
-            ShowStatusMessage("Dashboard data loaded successfully!", "alert-success", "fa-check-circle");
+            // ShowStatusMessage("Dashboard data loaded successfully!", "alert-success", "fa-check-circle");
         }
         catch (Exception ex)
         {
